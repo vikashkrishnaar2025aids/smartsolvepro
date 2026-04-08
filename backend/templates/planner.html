@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}⚡ AI Planner — Smart Solve AI{% endblock %}
+{% block page_title %}AI Planner{% endblock %}
+
+{% block content %}
+<!-- ── INPUT PANEL ── -->
+<section class="input-panel glass-card anim-fade-up">
+
+  <div class="panel-header">
+    <div class="section-label">PHASE 1: REQUIREMENTS & SCOPING</div>
+  </div>
+
+  <div class="input-grid">
+
+    <!-- Problem -->
+    <div class="field-group field-wide">
+      <label class="field-label" for="problem">
+        <span class="label-icon">◈</span> Problem Statement
+      </label>
+      <textarea id="problem" class="field-textarea" rows="5"
+        placeholder="Describe your project challenge or goal in detail...&#10;&#10;Example: Build a real-time collaborative document editor with AI writing assistance, user authentication, version history, and mobile support within 6 weeks."></textarea>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+        <div class="char-count" id="char-count">0 / 1000</div>
+        <button id="btn-analyze" class="btn-analyze" onclick="analyzeProblem()" style="background: var(--c-purple); border: 2px solid var(--c-black); color: var(--c-black); padding: 8px 16px; font-family: var(--font-display); font-size: 11px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 3px 3px 0px var(--c-black); transition: all 0.2s;">
+          <span class="btn-icon-wrap" style="margin-right: 4px;">🔍</span> Analyze Project Scope
+        </button>
+      </div>
+      <div id="analyze-results" style="display: none; margin-top: 12px; padding: 16px; border: var(--b-width) solid var(--c-black); background: #ffffff; box-shadow: var(--s-hard-sm); font-size: 0.85rem; color: var(--c-black); font-weight: 500;">
+        <!-- Results will be injected here -->
+      </div>
+    </div>
+
+    <!-- Team -->
+    <div class="field-group">
+      <label class="field-label">
+        <span class="label-icon">◈</span> Team Members &amp; Skills
+      </label>
+      <div id="team-list"></div>
+      <button class="btn-add-member" onclick="addMember()">
+        <span>+</span> Add Team Member
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Options row -->
+  <div class="options-row">
+    <div class="field-group field-inline">
+      <label class="field-label" for="deadline">
+        <span class="label-icon">◈</span> Deadline <span class="optional">(optional)</span>
+      </label>
+      <input type="text" id="deadline" class="field-input" placeholder="e.g. 3 weeks, 30 days, 2 months">
+    </div>
+    <div class="field-group field-inline">
+      <label class="field-label">
+        <span class="label-icon">◈</span> AI Mode
+      </label>
+      <div id="ai-mode-badge" class="ai-mode-badge">Loading…</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <button class="btn-generate" id="gen-btn" onclick="generatePlan()">
+    <span class="btn-glow"></span>
+    <span class="btn-content">
+      <span class="btn-icon-wrap">◈</span>
+      <span class="btn-text">SYNTHESIZE ARCHITECTURE PLAN</span>
+      <span class="btn-arrow">→</span>
+    </span>
+  </button>
+
+  <div id="error-box" class="error-box hidden"></div>
+
+</section>
+
+<!-- ── LOADING ── -->
+<div id="loading-panel" class="loading-panel hidden">
+  <div class="loader-core">
+    <div class="loader-rings">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="loader-center">AI</div>
+    </div>
+  </div>
+  <div class="loader-text" id="loader-step">INITIALIZING</div>
+  <div class="loader-sub" id="loader-sub">Connecting to AI engine...</div>
+  <div class="loader-progress">
+    <div class="loader-bar" id="loader-bar"></div>
+  </div>
+</div>
+
+<!-- ══ OUTPUT SECTION ══ -->
+<div id="output-section" class="output-section hidden">
+
+  <!-- Project title + meta -->
+  <div class="project-header glass-card anim-fade-up">
+    <div class="project-meta">
+      <div class="project-id-badge" id="proj-id-badge">ID: ——</div>
+      <div class="project-timestamp" id="proj-time"></div>
+    </div>
+    <h2 class="project-title" id="proj-title">Project Plan</h2>
+    <p class="project-summary" id="proj-summary"></p>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row" id="stats-row"></div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <div class="glass-card chart-card anim-fade-up">
+      <div class="card-header">
+        <span class="section-label">STRUCTURAL BREAKDOWN</span>
+      </div>
+      <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
+      <div id="type-legend" class="chart-legend"></div>
+    </div>
+    <div class="glass-card chart-card anim-fade-up">
+      <div class="card-header">
+        <span class="section-label">RESOURCE DISTRIBUTION</span>
+      </div>
+      <div class="chart-wrap"><canvas id="workloadChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Gantt -->
+  <div class="glass-card gantt-card anim-fade-up">
+    <div class="card-header">
+      <span class="section-label">EXECUTION TIMELINE</span>
+      <span class="card-note" id="gantt-note"></span>
+    </div>
+    <div class="gantt-scroll-wrap" id="gantt-wrap"></div>
+  </div>
+
+  <!-- Task board -->
+  <div class="glass-card tasks-card anim-fade-up">
+    <div class="card-header tasks-header">
+      <div>
+        <span class="section-label">WORK BREAKDOWN STRUCTURE</span>
+        <span class="edit-hint">· click task title to edit</span>
+      </div>
+      <div class="filter-bar" id="filter-bar"></div>
+    </div>
+    <div id="task-list" class="task-list"></div>
+  </div>
+
+</div><!-- /output-section -->
+
+<script>
+    // Handle URL parameters for loading project
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pid = urlParams.get('pid');
+        if (pid) {
+            loadProject(pid);
+        }
+    });
+</script>
+{% endblock %}

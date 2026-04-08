@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}⚡ Dashboard — Smart Solve AI{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid anim-fade-up">
+    <!-- Quick Stats -->
+    <section class="glass-card stat-summary">
+        <div class="panel-header">
+            <span class="section-label">EXECUTIVE METRICS</span>
+        </div>
+        <div class="stats-row" style="margin-top: 15px;">
+            <div class="stat-card" id="btn-toggle-view" style="cursor: pointer; transition: all 0.2s;">
+                <div class="stat-val" id="dash-active-count">0</div>
+                <div class="stat-label" id="dash-active-label">Active Initiatives</div>
+                <div style="font-size: 10px; margin-top: 5px; opacity: 0.6; font-family: var(--font-mono);">(Click to show/hide project list)</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Activity / Projects -->
+    <section class="glass-card activity-card" id="activity-section" style="margin-top: 20px; display: none;">
+        <div class="panel-header">
+            <span class="section-label" id="list-label">PROJECT PORTFOLIO</span>
+        </div>
+        <div id="dash-project-list" class="history-list" style="margin-top: 15px;">
+            <p class="empty-msg">No recent projects. Start by creating a plan!</p>
+        </div>
+    </section>
+
+    <!-- Always visible action button if no projects are showing? Or keep it inside? User said "remove team, task, allocation" so we keep it clean. -->
+    <section style="margin-top: 20px;">
+        <a href="/planner" class="btn-generate" style="text-decoration: none; display: flex; justify-content: center; align-items: center; padding: 12px;">
+            <span class="btn-content">
+                <span class="btn-icon-wrap">◈</span>
+                <span class="btn-text">INITIALIZE NEW PROJECT</span>
+            </span>
+        </a>
+    </section>
+</div>
+
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    #btn-toggle-view:hover {
+        background: var(--c-brand);
+        transform: translate(-3px, -3px);
+        box-shadow: var(--s-hard-sm);
+    }
+</style>
+
+<script>
+    let showList = false;
+    let globalHistory = [];
+
+    function getUserId() {
+        const user = localStorage.getItem('user');
+        if (!user) return null;
+        try {
+            return JSON.parse(user).id;
+        } catch { return null; }
+    }
+
+    function updateView() {
+        const listContainer = document.getElementById('dash-project-list');
+        const section = document.getElementById('activity-section');
+        
+        if (!showList) {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+            if (globalHistory.length === 0) {
+                listContainer.innerHTML = '<p class="empty-msg">No recent projects found.</p>';
+            } else {
+                listContainer.innerHTML = globalHistory.map(p => `
+                    <div class="history-item" onclick="window.location.href='/planner?pid=${p.id}'" style="background:#ffffff; border: 2px solid #000000; box-shadow: 4px 4px 0px #000000; margin-bottom: 12px; cursor: pointer; padding: 12px; transition: all 0.2s;">
+                        <div class="history-item-title" style="font-weight: 900; font-family: var(--font-display); font-size: 16px;">${p.title}</div>
+                        <div class="history-item-meta" style="font-size: 12px; font-weight: 700; color: #333; margin-top: 5px; display: flex; justify-content: space-between;">
+                            <span>⚡ ${p.task_count} tasks</span>
+                            <span>📅 ${p.created_at}</span>
+                        </div>
+                    </div>`).join('');
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const uid = getUserId();
+            if (!uid) {
+                document.getElementById('dash-active-count').textContent = '0';
+                updateView();
+                return;
+            }
+
+            const r = await fetch(`/api/history?user_id=${uid}`);
+            const d = await r.json();
+            globalHistory = d.history || [];
+            
+            document.getElementById('dash-active-count').textContent = d.total_projects || globalHistory.length;
+            
+            // Default: Hidden
+            updateView();
+
+            document.getElementById('btn-toggle-view').addEventListener('click', () => {
+                showList = !showList;
+                updateView();
+            });
+            
+        } catch(e) { console.error(e); }
+    });
+</script>
+{% endblock %}

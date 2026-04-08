@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}👥 Resource Allocation — Smart Solve Pro{% endblock %}
+{% block page_title %}Resource Allocation{% endblock %}
+
+{% block content %}
+<div class="team-container anim-fade-up">
+    <!-- Active Team -->
+    <section class="glass-card">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="section-label">RESOURCE DIRECTORY</span>
+            <button class="btn-add-member" onclick="openAddModal()" style="width: auto; padding: 6px 15px;">+ New Resource</button>
+        </div>
+        
+        <div class="team-grid" id="team-directory" style="margin-top: 20px;">
+            <!-- Will be populated by JS -->
+            <div class="loading-state">Loading resources...</div>
+        </div>
+    </section>
+
+    <!-- Skill Matrix (Dynamic UI) -->
+    <section class="glass-card" style="margin-top: 20px; margin-bottom: 40px;">
+        <div class="panel-header">
+            <span class="section-label">⚡ SKILL COVERAGE MATRIX</span>
+        </div>
+        <div id="skill-matrix-body" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-top: 20px;">
+            <!-- Will be populated by JS -->
+        </div>
+    </section>
+</div>
+
+<!-- Simple Modal for Adding/Editing -->
+<div id="member-modal" class="history-drawer hidden" style="left: 50%; top: 50%; height: auto; bottom: auto; transform: translate(-50%, -50%); border: var(--b-width) solid var(--c-black); width: 400px; max-width: 90vw; background: #ffffff; box-shadow: var(--s-hard-lg); padding: 0;">
+    <div class="history-header" style="background: var(--c-purple); border-bottom: var(--b-width) solid var(--c-black); padding: 15px;">
+        <span class="section-label" id="modal-title" style="color: var(--c-black); font-weight: 900;">ALLOCATE NEW RESOURCE</span>
+        <button class="btn-close" onclick="closeModal()" style="border-color: var(--c-black); color: var(--c-black);">✕</button>
+    </div>
+    <div style="padding: 24px; display: flex; flex-direction: column; gap: 15px;">
+        <input type="hidden" id="member-id">
+        <div>
+            <label style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: var(--c-black); margin-bottom: 5px; display: block;">FULL NAME</label>
+            <input type="text" id="member-name" class="field-input" placeholder="e.g. Alice Johnson">
+        </div>
+        <div>
+            <label style="font-family: var(--font-display); font-size: 11px; font-weight: 900; color: var(--c-black); margin-bottom: 5px; display: block;">SKILLS (Comma separated)</label>
+            <input type="text" id="member-skills" class="field-input" placeholder="e.g. Python, React, UI Design">
+        </div>
+        <button class="btn-generate" id="save-btn" onclick="saveMember()" style="margin-top: 10px;">SAVE RESOURCE</button>
+    </div>
+</div>
+
+<style>
+    .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+    
+    .team-member-card {
+        background: #ffffff;
+        border: var(--b-width) solid var(--c-black);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.2s;
+        position: relative;
+        box-shadow: var(--s-hard-sm);
+    }
+    
+    .team-member-card:hover {
+        background: var(--c-brand);
+        transform: translate(-3px, -3px);
+        box-shadow: var(--s-hard);
+    }
+    
+    .avatar {
+        width: 54px;
+        height: 54px;
+        background: #ffffff;
+        border: var(--b-width) solid var(--c-black);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: 22px;
+        color: var(--c-black);
+        flex-shrink: 0;
+        box-shadow: 2px 2px 0px var(--c-black);
+    }
+    
+    .member-info h4 { margin: 0; color: var(--c-black); font-size: 18px; font-family: var(--font-display); font-weight: 900; text-transform: uppercase; }
+    .member-info p { 
+        margin: 5px 0 0; 
+        font-size: 12px; 
+        color: var(--c-black); 
+        font-weight: 700;
+        font-family: var(--font-mono);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .loading-state, .empty-msg {
+        grid-column: 1 / -1;
+        padding: 40px;
+        text-align: center;
+        color: var(--c-muted);
+        font-style: italic;
+    }
+
+    .skill-matrix-card {
+        background: #ffffff;
+        border: var(--b-width) solid var(--c-black);
+        padding: 20px;
+        box-shadow: var(--s-hard-sm);
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .skill-matrix-card:hover {
+        transform: translate(-4px, -4px);
+        box-shadow: 6px 6px 0px var(--c-black);
+    }
+
+    .skill-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .skill-card-title {
+        font-family: var(--font-display);
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--c-black);
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .skill-card-pct {
+        font-family: var(--font-mono);
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .skill-progress-wrap {
+        height: 12px;
+        background: #f0f0f0;
+        border: var(--b-width) solid var(--c-black);
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .skill-progress-fill {
+        height: 100%;
+        border-right: var(--b-width) solid var(--c-black);
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .skill-member-tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 10px;
+        margin: 0 6px 6px 0;
+        border: var(--b-width) solid var(--c-black);
+        box-shadow: 1px 1px 0px var(--c-black);
+    }
+</style>
+
+<script>
+    let teamData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchTeam();
+    });
+    
+    async function fetchTeam() {
+        try {
+            const resp = await fetch('/api/team');
+            const data = await resp.json();
+            teamData = data.team || [];
+            renderDirectory();
+            renderMatrix();
+        } catch (err) {
+            console.error("Failed to fetch team:", err);
+            document.getElementById('team-directory').innerHTML = '<p class="empty-msg" style="color: var(--c-pink)">Failed to load team data.</p>';
+        }
+    }
+    
+    function renderDirectory() {
+        const container = document.getElementById('team-directory');
+        if (teamData.length === 0) {
+            container.innerHTML = '<p class="empty-msg">No resources defined yet. Click "+ New Resource" to add one.</p>';
+            return;
+        }
+
+        container.innerHTML = teamData.map(m => `
+            <div class="team-member-card">
+                <div class="member-actions">
+                    <button class="btn-icon" onclick="openEditModal(${m.id})" title="Edit">✎</button>
+                    <button class="btn-icon delete" onclick="deleteMember(${m.id})" title="Delete">✕</button>
+                </div>
+                <div class="avatar">${m.name ? m.name[0].toUpperCase() : '?'}</div>
+                <div class="member-info">
+                    <h4>${m.name}</h4>
+                    <p>${m.skills || 'No skills listed'}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderMatrix() {
+        const categories = {
+            'Development': ['python', 'javascript', 'react', 'node', 'java', 'backend', 'frontend', 'api', 'flask'],
+            'Design': ['ui', 'ux', 'figma', 'design', 'css', 'html', 'visual'],
+            'Research': ['research', 'data', 'analysis', 'stats', 'ml', 'ai'],
+            'Testing': ['testing', 'qa', 'automation', 'test'],
+            'Deployment': ['devops', 'docker', 'aws', 'cloud', 'linux'],
+            'Strategy': ['product', 'manager', 'agile', 'scrum', 'planning', 'jira']
+        };
+
+        const container = document.getElementById('skill-matrix-body');
+        let html = '';
+
+        Object.entries(categories).forEach(([cat, keywords]) => {
+            const qualified = teamData.filter(m => {
+                const skills = (m.skills || '').toLowerCase();
+                return keywords.some(kw => skills.includes(kw));
+            });
+
+            // Calculate coverage: 3 people = 100%
+            const rawCoverage = qualified.length;
+            const targetCoverage = 3; 
+            const coveragePct = Math.min(100, Math.round((rawCoverage / targetCoverage) * 100));
+
+            const color = cat === 'Development' ? 'var(--c-blue)' : 
+                          cat === 'Design' ? 'var(--c-pink)' : 
+                          cat === 'Research' ? 'var(--c-amber)' : 
+                          cat === 'Testing' ? 'var(--c-purple)' : 
+                          cat === 'Strategy' ? 'var(--c-green)' : '#ffaaff';
+
+            const qualHtml = qualified.length > 0 
+                ? qualified.map(m => `<span class="skill-member-tag" style="background:${color}33; color:var(--c-black); border-color:var(--c-black)">👤 ${m.name}</span>`).join('')
+                : `<span style="font-size:11px; color:var(--c-muted); font-style:italic">No matching resources currently available.</span>`;
+
+            html += `
+                <div class="skill-matrix-card">
+                    <div class="skill-card-header">
+                        <h4 class="skill-card-title">${cat}</h4>
+                        <span class="skill-card-pct" style="color: ${color}">${coveragePct}%</span>
+                    </div>
+                    
+                    <div class="skill-progress-wrap">
+                        <div class="skill-progress-fill" style="width: ${coveragePct}%; background: ${color}"></div>
+                    </div>
+                    
+                    <div style="flex-grow: 1;">
+                        <div style="font-size:10px; font-family:var(--font-mono); color:var(--c-black); margin-bottom:10px; font-weight:700; letter-spacing:1px">QUALIFIED TALENT:</div>
+                        <div>${qualHtml}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+    
+    function openAddModal() {
+        document.getElementById('modal-title').innerText = "ALLOCATE NEW RESOURCE";
+        document.getElementById('member-id').value = "";
+        document.getElementById('member-name').value = "";
+        document.getElementById('member-skills').value = "";
+        document.getElementById('member-modal').classList.remove('hidden');
+    }
+
+    function openEditModal(id) {
+        const member = teamData.find(m => m.id === id);
+        if (!member) return;
+
+        document.getElementById('modal-title').innerText = "EDIT RESOURCE PROFILE";
+        document.getElementById('member-id').value = member.id;
+        document.getElementById('member-name').value = member.name;
+        document.getElementById('member-skills').value = member.skills;
+        document.getElementById('member-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('member-modal').classList.add('hidden');
+    }
+
+    async function saveMember() {
+        const id = document.getElementById('member-id').value;
+        const name = document.getElementById('member-name').value.trim();
+        const skills = document.getElementById('member-skills').value.trim();
+
+        if (!name) {
+            alert("Name is required");
+            return;
+        }
+
+        const btn = document.getElementById('save-btn');
+        btn.innerText = "SAVING...";
+        btn.disabled = true;
+
+        try {
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/team/${id}` : '/api/team';
+            
+            const resp = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, skills })
+            });
+
+            if (resp.ok) {
+                await fetchTeam();
+                closeModal();
+            } else {
+                const err = await resp.json();
+                alert("Error: " + err.error);
+            }
+        } catch (err) {
+            console.error("Save failed:", err);
+            alert("Connection error occurred.");
+        } finally {
+            btn.innerText = "SAVE RESOURCE";
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteMember(id) {
+        if (!confirm("Are you sure you want to deallocate this resource?")) return;
+
+        try {
+            const resp = await fetch(`/api/team/${id}`, { method: 'DELETE' });
+            if (resp.ok) {
+                await fetchTeam();
+            }
+        } catch (err) {
+            console.error("Delete failed:", err);
+        }
+    }
+</script>
+{% endblock %}

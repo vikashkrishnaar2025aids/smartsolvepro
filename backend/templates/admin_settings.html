@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Portal - Smart Solve AI{% endblock %}
+{% block page_title %}Admin Control Panel{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="glass-card" style="border-color: var(--c-blue);">
+        <div class="panel-header">
+            <span class="section-label" style="color: var(--c-blue);">CORE ENGINE SETTINGS</span>
+            <p class="project-summary" style="margin-top: 10px;">Configure the master AI settings and API keys here. This page is hidden from general users.</p>
+        </div>
+
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 class="setting-title">Primary AI Model</h3>
+                    <p class="setting-desc">Choose which AI handles the core planning logic.</p>
+                </div>
+                <div class="setting-control">
+                    <select class="field-input" id="ai-mode-select">
+                        <option value="groq-ai" {% if ai_mode == 'groq-ai' %}selected{% endif %}>Groq (Llama 3 70B)</option>
+                        <option value="gemini-ai" {% if ai_mode == 'gemini-ai' %}selected{% endif %}>Google Gemini 1.5 Flash</option>
+                        <option value="openrouter-ai" {% if ai_mode == 'openrouter-ai' %}selected{% endif %}>OpenRouter (Claude/GPT)</option>
+                        <option value="rule-based" {% if ai_mode == 'rule-based' %}selected{% endif %}>Rule-Based Fallback (Offline)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 class="setting-title">API Key Status</h3>
+                    <p class="setting-desc">Current connection status to AI providers.</p>
+                </div>
+                <div class="setting-control">
+                    <div class="status-badges">
+                        <div class="status-badge {% if has_groq %}active{% else %}inactive{% endif %}">
+                            <span class="dot"></span> Groq: {% if has_groq %}Connected{% else %}Missing Key{% endif %}
+                        </div>
+                        <div class="status-badge {% if has_gemini %}active{% else %}inactive{% endif %}">
+                            <span class="dot"></span> Google Gemini: {% if has_gemini %}Connected{% else %}Missing Key{% endif %}
+                        </div>
+                        <div class="status-badge {% if has_openrouter %}active{% else %}inactive{% endif %}">
+                            <span class="dot"></span> OpenRouter: {% if has_openrouter %}Connected{% else %}Missing Key{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 class="setting-title">Groq API Key</h3>
+                    <p class="setting-desc">LPU inference for high-speed planning (Llama 3).</p>
+                </div>
+                <div class="setting-control-stack">
+                    <input type="password" class="field-input" id="groq-key-input" placeholder="gsk_..." value="{% if has_groq %}••••••••••••••••{% endif %}">
+                    <button class="filter-btn sm-save" onclick="saveKey('groq')">Save Key</button>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 class="setting-title">Google Gemini API Key</h3>
+                    <p class="setting-desc">Required for Gemini 1.5 Flash based planning.</p>
+                </div>
+                <div class="setting-control-stack">
+                    <input type="password" class="field-input" id="gemini-key-input" placeholder="AIza..." value="{% if has_gemini %}••••••••••••••••{% endif %}">
+                    <button class="filter-btn sm-save" onclick="saveKey('gemini')">Save Key</button>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 class="setting-title">OpenRouter API Key</h3>
+                    <p class="setting-desc">Universal key for multiple models via OpenRouter.</p>
+                </div>
+                <div class="setting-control-stack">
+                    <input type="password" class="field-input" id="openrouter-key-input" placeholder="sk-or-v1-..." value="{% if has_openrouter %}••••••••••••••••{% endif %}">
+                    <button class="filter-btn sm-save" onclick="saveKey('openrouter')">Save Key</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card" style="margin-top: 24px; border-color: rgba(255, 77, 109, 0.2);">
+        <div class="panel-header">
+            <span class="section-label" style="color: var(--c-red);">DANGER ZONE</span>
+        </div>
+        <div class="settings-grid">
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 class="setting-title">Clear Project History</h3>
+                    <p class="setting-desc">Permanently delete all generated plans and history.</p>
+                </div>
+                <div class="setting-control">
+                    <button class="filter-btn" style="color: var(--c-red); border-color: rgba(255, 77, 109, 0.4);" onclick="clearHistory()">Clear History</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .settings-grid { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+    .setting-item { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--c-border); gap: 24px; }
+    .setting-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .setting-info { flex: 1; }
+    .setting-title { font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; color: var(--c-text); margin-bottom: 4px; }
+    .setting-desc { font-size: 12px; color: var(--c-muted); }
+    .setting-control { min-width: 200px; display: flex; justify-content: flex-end; }
+    .setting-control-stack { display: flex; flex-direction: column; gap: 10px; min-width: 280px; }
+    .sm-save { align-self: flex-end; padding: 4px 12px; font-size: 10px; }
+    .status-badges { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .status-badge { font-family: var(--font-mono); font-size: 10px; padding: 6px 12px; border-radius: 4px; background: rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px; letter-spacing: 1px; }
+    .status-badge.active { color: var(--c-green); border: 1px solid rgba(0,255,157,0.2); }
+    .status-badge.inactive { color: var(--c-muted); border: 1px solid var(--c-border); }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status-badge.active .dot { box-shadow: 0 0 8px currentColor; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+</style>
+
+<script>
+async function clearHistory() {
+    if (!confirm("Are you sure you want to clear ALL project history? This cannot be undone.")) return;
+    try {
+        const historyR = await fetch('/api/history');
+        const historyD = await historyR.json();
+        for (const p of historyD.history) { await fetch(`/api/history/${p.id}`, { method: 'DELETE' }); }
+        alert("All project history has been cleared.");
+        window.location.reload();
+    } catch (e) { alert("Error clearing history: " + e.message); }
+}
+
+async function saveKey(type) {
+    const input = document.getElementById(`${type}-key-input`);
+    const key = input.value.trim();
+    if (!key || key.includes('•')) { alert("Please enter a valid key."); return; }
+    try {
+        const payload = {}; payload[`${type}_key`] = key;
+        const r = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const d = await r.json();
+        if (d.success) { alert(`${type.toUpperCase()} key updated successfully!`); window.location.reload(); }
+        else { alert("Error: " + (d.error || "Failed to update key")); }
+    } catch (err) { alert("Failed to connect to server: " + err.message); }
+}
+
+document.getElementById('ai-mode-select').addEventListener('change', async (e) => {
+    const newMode = e.target.value;
+    try {
+        const r = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ai_mode: newMode })
+        });
+        const d = await r.json();
+        if (d.success) { console.log("AI Mode updated to " + d.ai_mode); }
+        else { alert("Error: " + (d.error || "Failed to update mode")); }
+    } catch (err) { alert("Failed to connect to server: " + err.message); }
+});
+</script>
+{% endblock %}

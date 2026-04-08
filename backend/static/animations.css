@@ -1,0 +1,84 @@
+/* ═══════════════════════════════════════
+   SMART SOLVE AI — Animations
+═══════════════════════════════════════ */
+
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-35px) scale(1.06); }
+}
+@keyframes scanScroll {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,157,0.4); }
+  60%       { opacity: 0.75; box-shadow: 0 0 0 5px rgba(0,255,157,0); }
+}
+@keyframes logoPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(0,212,255,0.5)); }
+  50%       { filter: drop-shadow(0 0 14px rgba(180,77,255,0.7)); }
+}
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes barGrow {
+  from { width: 0 !important; }
+}
+@keyframes cardPop {
+  0%   { opacity: 0; transform: translateY(14px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(0,212,255,0.12); }
+  50%       { border-color: rgba(0,212,255,0.35); }
+}
+
+/* Utility animation classes */
+.anim-fade-up {
+  animation: fadeSlideUp 0.55s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.task-card {
+  animation: cardPop 0.4s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.stat-card {
+  animation: cardPop 0.45s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.g-bar {
+  animation: barGrow 0.7s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+/* Skeleton shimmer for future loading states */
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(0,212,255,0.05) 25%,
+    rgba(0,212,255,0.12) 50%,
+    rgba(0,212,255,0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease infinite;
+  border-radius: 6px;
+}
+
+/* Glowing border on active cards */
+.glass-card.highlight {
+  animation: borderGlow 2s ease infinite;
+}

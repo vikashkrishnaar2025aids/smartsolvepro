@@ -1,0 +1,426 @@
+{
+  "CA1DDF96": {
+    "id": "CA1DDF96",
+    "title": "Give Me A Plan About Our",
+    "problem": "give  me a plan about our own app",
+    "created_at": "2026-03-24 14:59",
+    "team_size": 2,
+    "task_count": 11,
+    "plan": {
+      "projectTitle": "Give Me A Plan About Our",
+      "summary": "This optimized plan divides the project into 11 structured phases with 33 specific subtasks. Work is allocated to 2 based on specific skills. The schedule is optimized for parallel execution, completing in 35 days.",
+      "totalDays": 35,
+      "tasks": [
+        {
+          "id": 1,
+          "name": "Project planning & kickoff",
+          "description": "Complete project planning & kickoff phase of the project.",
+          "type": "planning",
+          "priority": "high",
+          "subtasks": [
+            "Goals setup",
+            "Milestones",
+            "Team roles"
+          ],
+          "durationDays": 1,
+          "startDay": 1,
+          "dependencies": [],
+          "assignee": "Alice"
+        },
+        {
+          "id": 2,
+          "name": "Research & requirements gathering",
+          "description": "Complete research & requirements gathering phase of the project.",
+          "type": "research",
+          "priority": "high",
+          "subtasks": [
+            "Competition audit",
+            "User interviews",
+            "FR/NFR docs"
+          ],
+          "durationDays": 3,
+          "startDay": 2,
+          "dependencies": [
+            1
+          ],
+          "assignee": "Alice"
+        },
+        {
+          "id": 3,
+          "name": "System architecture design",
+          "description": "Complete system architecture design phase of the project.",
+          "type": "development",
+          "priority": "high",
+          "subtasks": [
+            "Tech stack choice",
+            "Integration map",
+            "Sec design"
+          ],
+          "durationDays": 2,
+          "startDay": 5,
+          "dependencies": [
+            2
+          ],
+          "assignee": "Alice"
+        },
+        {
+          "id": 4,
+          "name": "Core feature development",
+          "description": "Complete core feature development phase of the project.",
+          "type": "development",
+          "priority": "high",
+          "subtasks": [
+            "MVP features",
+            "Logic flow",
+            "Unit testing"
+          ],
+          "durationDays": 7,
+          "startDay": 7,
+          "dependencies": [
+            3
+          ],
+          "assignee": "Alice"
+        },
+        {
+          "id": 5,
+          "name": "UI/UX design",
+          "description": "Complete ui/ux design phase of the project.",
+          "type": "design",
+          "priority": "medium",
+          "subtasks": [
+            "Visual language",
+            "Prototypes",
+            "Assets"
+          ],
+          "durationDays": 4,
+          "startDay": 14,
+          "dependencies": [],
+          "assignee": "Alice"
+        },
+        {
+          "id": 6,
+          "name": "Frontend implementation",
+          "description": "Implement responsive UI components, state management, routing, and API integration.",
+          "type": "development",
+          "priority": "medium",
+          "subtasks": [
+            "Page layouts",
+            "Iteractivity",
+            "Refinement"
+          ],
+          "durationDays": 5,
+          "startDay": 18,
+          "dependencies": [],
+          "assignee": "Alice"
+        },
+        {
+          "id": 7,
+          "name": "Integration & API work",
+          "description": "Complete integration & api work phase of the project.",
+          "type": "development",
+          "priority": "medium",
+          "subtasks": [
+            "Data flow",
+            "Third-party APIs",
+            "Connectors"
+          ],
+          "durationDays": 3,
+          "startDay": 23,
+          "dependencies": [],
+          "assignee": "Alice"
+        },
+        {
+          "id": 8,
+          "name": "Quality assurance & testing",
+          "description": "Write and execute unit, integration, and end-to-end tests. Document bugs and regressions.",
+          "type": "testing",
+          "priority": "high",
+          "subtasks": [
+            "Manual QA",
+            "Regression",
+            "Fixing"
+          ],
+          "durationDays": 4,
+          "startDay": 26,
+          "dependencies": [
+            7
+          ],
+          "assignee": "Bob"
+        },
+        {
+          "id": 9,
+          "name": "Performance & security audit",
+          "description": "Complete performance & security audit phase of the project.",
+          "type": "testing",
+          "priority": "medium",
+          "subtasks": [
+            "Pentesting",
+            "Load tests",
+            "Final sweep"
+          ],
+          "durationDays": 2,
+          "startDay": 30,
+          "dependencies": [],
+          "assignee": "Bob"
+        },
+        {
+          "id": 10,
+          "name": "Deployment setup",
+          "description": "Complete deployment setup phase of the project.",
+          "type": "deployment",
+          "priority": "high",
+          "subtasks": [
+            "Server config",
+            "CI/CD",
+            "Domain/SSL"
+          ],
+          "durationDays": 2,
+          "startDay": 32,
+          "dependencies": [
+            9
+          ],
+          "assignee": "Alice"
+        },
+        {
+          "id": 11,
+          "name": "Documentation",
+          "description": "Write technical docs, API reference, onboarding guides, and user manuals.",
+          "type": "planning",
+          "priority": "low",
+          "subtasks": [
+            "Onboarding",
+            "Technical",
+            "Maintenance"
+          ],
+          "durationDays": 2,
+          "startDay": 34,
+          "dependencies": [],
+          "assignee": "Alice"
+        }
+      ],
+      "project_id": "CA1DDF96"
+    }
+  },
+  "957054B2": {
+    "id": "957054B2",
+    "title": "Create A Ecommerce Website",
+    "problem": "create a ecommerce website",
+    "created_at": "2026-03-24 15:00",
+    "team_size": 3,
+    "task_count": 12,
+    "plan": {
+      "projectTitle": "Create A Ecommerce Website",
+      "summary": "This optimized plan divides the project into 12 structured phases with 36 specific subtasks. Work is allocated to 3 based on specific skills. The schedule is optimized for parallel execution, completing in 21 days.",
+      "totalDays": 21,
+      "tasks": [
+        {
+          "id": 1,
+          "name": "Project kickoff & scope definition",
+          "description": "Define project goals, success metrics, timeline, and assign roles. Set up project management tools.",
+          "type": "planning",
+          "priority": "high",
+          "subtasks": [
+            "Stakeholder meeting",
+            "Requirement gathering",
+            "Project setup"
+          ],
+          "durationDays": 1,
+          "startDay": 1,
+          "dependencies": [],
+          "assignee": "mari"
+        },
+        {
+          "id": 2,
+          "name": "UI/UX wireframes & design system",
+          "description": "Create low/high-fidelity wireframes, define color palette, typography, and reusable component library.",
+          "type": "design",
+          "priority": "high",
+          "subtasks": [
+            "Moodboard",
+            "Wireframes",
+            "Component library"
+          ],
+          "durationDays": 2,
+          "startDay": 2,
+          "dependencies": [
+            1
+          ],
+          "assignee": "mari"
+        },
+        {
+          "id": 3,
+          "name": "Database schema design",
+          "description": "Design entity-relationship model, choose database technology, define indexes and relationships.",
+          "type": "development",
+          "priority": "high",
+          "subtasks": [
+            "ER diagram",
+            "Migration scripts",
+            "Seeding data"
+          ],
+          "durationDays": 1,
+          "startDay": 3,
+          "dependencies": [
+            2
+          ],
+          "assignee": "mari"
+        },
+        {
+          "id": 4,
+          "name": "Backend API development",
+          "description": "Build RESTful or GraphQL API endpoints, business logic, middleware, and data validation.",
+          "type": "development",
+          "priority": "high",
+          "subtasks": [
+            "Auth routes",
+            "Business logic",
+            "API Documentation"
+          ],
+          "durationDays": 4,
+          "startDay": 5,
+          "dependencies": [
+            3
+          ],
+          "assignee": "mari"
+        },
+        {
+          "id": 5,
+          "name": "Frontend implementation",
+          "description": "Implement responsive UI components, state management, routing, and API integration.",
+          "type": "development",
+          "priority": "high",
+          "subtasks": [
+            "UI components",
+            "State management",
+            "Service layer"
+          ],
+          "durationDays": 4,
+          "startDay": 8,
+          "dependencies": [
+            4
+          ],
+          "assignee": "mari"
+        },
+        {
+          "id": 6,
+          "name": "Authentication & security",
+          "description": "Implement login/signup, JWT tokens, OAuth, role-based access control, and security hardening.",
+          "type": "development",
+          "priority": "high",
+          "subtasks": [
+            "OAuth setup",
+            "Rate limiting",
+            "Encryption"
+          ],
+          "durationDays": 2,
+          "startDay": 13,
+          "dependencies": [
+            5
+          ],
+          "assignee": "mari"
+        },
+        {
+          "id": 7,
+          "name": "Third-party integrations",
+          "description": "Complete third-party integrations phase of the project.",
+          "type": "development",
+          "priority": "medium",
+          "subtasks": [
+            "Payment gateway",
+            "Email service",
+            "Storage"
+          ],
+          "durationDays": 2,
+          "startDay": 15,
+          "dependencies": [],
+          "assignee": "mari"
+        },
+        {
+          "id": 8,
+          "name": "Unit & integration testing",
+          "description": "Complete unit & integration testing phase of the project.",
+          "type": "testing",
+          "priority": "high",
+          "subtasks": [
+            "Test cases",
+            "Automated suites",
+            "Bug fixes"
+          ],
+          "durationDays": 2,
+          "startDay": 17,
+          "dependencies": [
+            7
+          ],
+          "assignee": "boonie"
+        },
+        {
+          "id": 9,
+          "name": "UI/UX review & polish",
+          "description": "Complete ui/ux review & polish phase of the project.",
+          "type": "design",
+          "priority": "medium",
+          "subtasks": [
+            "Responsiveness",
+            "Motion design",
+            "Accessibility"
+          ],
+          "durationDays": 1,
+          "startDay": 17,
+          "dependencies": [],
+          "assignee": "mari"
+        },
+        {
+          "id": 10,
+          "name": "Performance optimization",
+          "description": "Complete performance optimization phase of the project.",
+          "type": "development",
+          "priority": "medium",
+          "subtasks": [
+            "Caching",
+            "Asset bundling",
+            "Load testing"
+          ],
+          "durationDays": 1,
+          "startDay": 18,
+          "dependencies": [],
+          "assignee": "mari"
+        },
+        {
+          "id": 11,
+          "name": "Deployment & CI/CD setup",
+          "description": "Configure hosting environment, set up automated pipelines, monitoring, and rollback strategies.",
+          "type": "deployment",
+          "priority": "high",
+          "subtasks": [
+            "Pipeline setup",
+            "Env config",
+            "SSL"
+          ],
+          "durationDays": 1,
+          "startDay": 20,
+          "dependencies": [
+            10
+          ],
+          "assignee": "mari"
+        },
+        {
+          "id": 12,
+          "name": "Documentation & handoff",
+          "description": "Complete documentation & handoff phase of the project.",
+          "type": "planning",
+          "priority": "low",
+          "subtasks": [
+            "User guide",
+            "Technical docs",
+            "Handoff meeting"
+          ],
+          "durationDays": 1,
+          "startDay": 21,
+          "dependencies": [],
+          "assignee": "mari"
+        }
+      ],
+      "project_id": "957054B2"
+    }
+  }
+}

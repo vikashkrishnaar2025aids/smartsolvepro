@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ War Room — {{ project.title }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --y:#FFE600;--p:#FF2D78;--g:#00FF94;--b:#00d4ff;
+  --purple:#b44dff;--orange:#ff8c42;
+  --bg:#060608;--card:#0d0d12;--card2:#111118;
+  --border:rgba(255,230,0,0.15);
+  --text:#F0F0E8;--muted:rgba(240,240,232,0.45);
+}
+body{font-family:'Space Grotesk',sans-serif;
+     background:var(--bg);color:var(--text);min-height:100vh;
+     overflow-x:hidden}
+
+/* BG */
+.bg-grid{position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,230,0,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,230,0,0.02) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 24px;background:rgba(6,6,8,0.95);
+    border-bottom:2px solid var(--y);backdrop-filter:blur(20px)}
+.nav-left{display:flex;align-items:center;gap:16px}
+.nav-back{color:var(--y);text-decoration:none;
+          font-family:'Space Mono',monospace;font-size:11px;
+          letter-spacing:1px;transition:opacity 0.2s}
+.nav-back:hover{opacity:0.7}
+.nav-logo{font-family:'Orbitron',monospace;font-size:14px;
+          font-weight:900;color:var(--y);letter-spacing:3px}
+.nav-project{font-size:12px;color:var(--muted);
+             font-family:'Space Mono',monospace;max-width:200px;
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-right{display:flex;align-items:center;gap:10px}
+.live-badge{display:flex;align-items:center;gap:6px;
+            background:rgba(0,255,148,0.1);
+            border:1px solid rgba(0,255,148,0.3);
+            padding:4px 12px;font-family:'Space Mono',monospace;
+            font-size:9px;color:var(--g);letter-spacing:2px}
+.live-dot{width:6px;height:6px;background:var(--g);border-radius:50%;
+          animation:blink 1.5s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* WRAPPER */
+.wrap{position:relative;z-index:1;
+      max-width:1400px;margin:0 auto;padding:24px 20px 60px}
+
+/* SECTION TITLE */
+.sec-title{font-family:'Space Mono',monospace;font-size:10px;
+           letter-spacing:3px;color:var(--y);text-transform:uppercase;
+           margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-title::before{content:'';width:20px;height:1px;
+                   background:var(--y);opacity:0.5}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);
+      padding:20px;transition:border-color 0.2s}
+.card:hover{border-color:rgba(255,230,0,0.3)}
+
+/* ── PROJECT HEADER ── */
+.proj-header{display:flex;gap:20px;align-items:stretch;
+             margin-bottom:24px;flex-wrap:wrap}
+.proj-info{flex:1;min-width:280px;background:var(--card);
+           border:2px solid var(--y);
+           box-shadow:6px 6px 0 rgba(255,230,0,0.15);
+           padding:24px}
+.proj-name{font-family:'Orbitron',monospace;font-size:20px;
+           font-weight:900;color:var(--y);margin-bottom:8px}
+.proj-problem{font-size:13px;color:var(--muted);
+              line-height:1.6;margin-bottom:14px}
+.proj-tags{display:flex;gap:8px;flex-wrap:wrap}
+.ptag{font-family:'Space Mono',monospace;font-size:9px;
+      padding:3px 10px;letter-spacing:1px}
+.ptag-deadline{background:rgba(255,45,120,0.12);
+               border:1px solid rgba(255,45,120,0.3);color:var(--p)}
+.ptag-days{background:rgba(0,212,255,0.1);
+           border:1px solid rgba(0,212,255,0.25);color:var(--b)}
+.ptag-status{background:rgba(0,255,148,0.1);
+             border:1px solid rgba(0,255,148,0.25);color:var(--g)}
+
+/* Health meter */
+.health-card{background:var(--card);border:2px solid var(--border);
+             padding:24px;display:flex;flex-direction:column;
+             align-items:center;justify-content:center;
+             min-width:180px}
+.health-ring{position:relative;width:120px;height:120px}
+.health-ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:10}
+.ring-fill{fill:none;stroke-width:10;stroke-linecap:round;
+           transition:stroke-dashoffset 0.8s ease,stroke 0.5s}
+.ring-center{position:absolute;inset:0;display:flex;
+             flex-direction:column;align-items:center;
+             justify-content:center}
+.ring-pct{font-family:'Orbitron',monospace;font-size:22px;
+          font-weight:900}
+.ring-label{font-size:9px;font-family:'Space Mono',monospace;
+            color:var(--muted);letter-spacing:1px;margin-top:2px}
+.health-status-text{font-family:'Space Mono',monospace;
+                    font-size:10px;letter-spacing:2px;
+                    margin-top:12px;text-align:center}
+
+/* ── RISK RADAR ── */
+.risk-section{margin-bottom:24px}
+.risk-grid{display:grid;grid-template-columns:300px 1fr;
+           gap:16px}
+@media(max-width:800px){.risk-grid{grid-template-columns:1fr}}
+
+.risk-gauge-card{background:var(--card);border:2px solid var(--border);
+                 padding:24px;text-align:center}
+.gauge-wrap{position:relative;width:200px;height:120px;
+            margin:0 auto 16px;overflow:hidden}
+.gauge-svg{width:200px;height:120px}
+.gauge-bg{fill:none;stroke:rgba(255,255,255,0.06);
+          stroke-width:16;stroke-linecap:round}
+.gauge-fill{fill:none;stroke-width:16;stroke-linecap:round;
+            transition:stroke-dashoffset 1s ease, stroke 0.5s}
+.gauge-center{position:absolute;bottom:0;left:50%;
+              transform:translateX(-50%);text-align:center}
+.gauge-score{font-family:'Orbitron',monospace;font-size:32px;
+             font-weight:900;line-height:1}
+.gauge-label{font-family:'Space Mono',monospace;font-size:9px;
+             letter-spacing:2px;color:var(--muted);margin-top:4px}
+.risk-level-badge{display:inline-block;
+                  font-family:'Space Mono',monospace;
+                  font-size:11px;letter-spacing:2px;font-weight:700;
+                  padding:6px 20px;margin-bottom:12px;margin-top:8px}
+.btn-scan{width:100%;padding:12px;background:var(--y);color:#000;
+          border:2px solid #000;font-family:'Space Mono',monospace;
+          font-size:11px;font-weight:700;letter-spacing:2px;
+          cursor:pointer;transition:all 0.15s;margin-top:8px}
+.btn-scan:hover{transform:translate(-2px,-2px);
+                box-shadow:4px 4px 0 rgba(255,255,255,0.2)}
+.btn-scan:active{transform:translate(0,0);box-shadow:none}
+.btn-scan:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+.risk-details{background:var(--card);border:1px solid var(--border);
+              padding:20px}
+.risk-summary{font-size:13px;color:var(--muted);line-height:1.7;
+              margin-bottom:16px;padding:12px;
+              background:rgba(0,0,0,0.3);
+              border-left:3px solid var(--y)}
+.warning-list,.rec-list{list-style:none}
+.warning-item,.rec-item{display:flex;gap:10px;align-items:flex-start;
+                         padding:8px 0;
+                         border-bottom:1px solid rgba(255,255,255,0.04);
+                         font-size:13px}
+.warning-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.rec-icon{color:var(--g);font-size:14px;flex-shrink:0;margin-top:1px}
+
+/* ── LEADERBOARD ── */
+.lb-section{margin-bottom:24px}
+.lb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+         gap:14px}
+.member-card{background:var(--card);
+             border:2px solid var(--border);
+             padding:18px;position:relative;
+             transition:all 0.2s;overflow:hidden}
+.member-card:hover{border-color:var(--y);
+                   transform:translate(-2px,-2px);
+                   box-shadow:4px 4px 0 rgba(255,230,0,0.15)}
+.member-card.rank-1{border-color:var(--y);
+                    box-shadow:4px 4px 0 rgba(255,230,0,0.2)}
+.member-card.rank-2{border-color:rgba(200,200,200,0.4)}
+.member-card.rank-3{border-color:rgba(205,127,50,0.4)}
+.member-rank{position:absolute;top:12px;right:14px;
+             font-family:'Orbitron',monospace;font-size:20px;
+             font-weight:900;color:rgba(255,255,255,0.1)}
+.member-avatar{width:48px;height:48px;border-radius:50%;
+               display:flex;align-items:center;justify-content:center;
+               font-family:'Orbitron',monospace;font-size:16px;
+               font-weight:900;margin-bottom:10px}
+.member-name-lb{font-size:15px;font-weight:700;margin-bottom:4px}
+.member-badge{font-family:'Space Mono',monospace;font-size:9px;
+              letter-spacing:1px;padding:2px 8px;
+              display:inline-block;margin-bottom:10px}
+.score-bar-wrap{margin-bottom:8px}
+.score-bar-label{display:flex;justify-content:space-between;
+                 font-size:10px;color:var(--muted);
+                 font-family:'Space Mono',monospace;margin-bottom:4px}
+.score-bar{height:6px;background:rgba(255,255,255,0.08)}
+.score-fill{height:100%;border-radius:0;transition:width 0.8s ease}
+.member-stats{display:grid;grid-template-columns:1fr 1fr;
+              gap:6px;margin-top:10px}
+.mstat{background:rgba(0,0,0,0.3);padding:6px 8px;text-align:center}
+.mstat-val{font-family:'Space Mono',monospace;font-size:13px;
+           font-weight:700}
+.mstat-label{font-size:9px;color:var(--muted);letter-spacing:1px;
+             text-transform:uppercase;margin-top:2px}
+.streak-fire{font-size:12px;margin-left:3px}
+
+/* Badge colours */
+.badge-legend{background:rgba(255,230,0,0.15);color:var(--y);
+              border:1px solid rgba(255,230,0,0.3)}
+.badge-champion{background:rgba(180,77,255,0.15);color:var(--purple);
+                border:1px solid rgba(180,77,255,0.3)}
+.badge-achiever{background:rgba(0,212,255,0.12);color:var(--b);
+                border:1px solid rgba(0,212,255,0.25)}
+.badge-contributor{background:rgba(0,255,148,0.1);color:var(--g);
+                   border:1px solid rgba(0,255,148,0.2)}
+.badge-newcomer{background:rgba(240,240,232,0.06);color:var(--muted);
+                border:1px solid rgba(240,240,232,0.12)}
+
+/* ── STANDUP ── */
+.standup-section{margin-bottom:24px}
+.standup-card{background:var(--card);border:2px solid var(--border);
+              padding:24px}
+.standup-header{display:flex;justify-content:space-between;
+                align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.standup-date{font-family:'Space Mono',monospace;font-size:11px;
+              color:var(--muted);letter-spacing:2px}
+.btn-standup{padding:10px 20px;background:rgba(0,212,255,0.1);
+             border:2px solid rgba(0,212,255,0.3);color:var(--b);
+             font-family:'Space Mono',monospace;font-size:10px;
+             font-weight:700;letter-spacing:2px;cursor:pointer;
+             transition:all 0.15s}
+.btn-standup:hover{background:rgba(0,212,255,0.2);
+                   border-color:var(--b)}
+.btn-standup:disabled{opacity:0.4;cursor:not-allowed}
+
+.standup-grid{display:grid;grid-template-columns:1fr 1fr 1fr;
+              gap:14px;margin-bottom:16px}
+@media(max-width:700px){.standup-grid{grid-template-columns:1fr}}
+.standup-col{background:rgba(0,0,0,0.3);padding:14px}
+.standup-col-title{font-family:'Space Mono',monospace;font-size:9px;
+                   letter-spacing:3px;text-transform:uppercase;
+                   margin-bottom:10px}
+.standup-item{font-size:12px;color:rgba(240,240,232,0.75);
+              padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+              display:flex;align-items:flex-start;gap:6px;line-height:1.5}
+.standup-item::before{content:'›';color:var(--y);flex-shrink:0}
+.standup-empty{font-size:11px;color:var(--muted);
+               font-style:italic;padding:4px 0}
+
+.ai-advice-box{background:rgba(255,230,0,0.05);
+               border:1px solid rgba(255,230,0,0.2);
+               padding:14px 16px;margin-top:14px}
+.ai-advice-label{font-family:'Space Mono',monospace;font-size:9px;
+                 letter-spacing:3px;color:var(--y);margin-bottom:6px}
+.ai-advice-text{font-size:13px;color:rgba(240,240,232,0.8);
+                line-height:1.7}
+
+.standup-empty-state{text-align:center;padding:40px;
+                     color:var(--muted);font-size:13px}
+.standup-empty-state button{margin-top:16px;padding:12px 24px;
+                             background:var(--y);color:#000;
+                             border:none;font-family:'Space Mono',monospace;
+                             font-size:11px;font-weight:700;
+                             letter-spacing:2px;cursor:pointer}
+
+/* ── RISK CHART ── */
+.risk-chart-card{background:var(--card);border:1px solid var(--border);
+                 padding:20px;margin-top:16px}
+
+/* ── HEALTH BAR ── */
+.health-bar-full{height:8px;background:rgba(255,255,255,0.06);
+                 margin:4px 0;position:relative;overflow:hidden}
+.health-bar-fill{height:100%;transition:width 0.6s ease}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,0.2)}
+::-webkit-scrollbar-thumb{background:rgba(255,230,0,0.2)}
+
+/* LOADING OVERLAY */
+.scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);
+              z-index:500;display:none;align-items:center;
+              justify-content:center;flex-direction:column;gap:16px}
+.scan-overlay.active{display:flex}
+.scan-text{font-family:'Orbitron',monospace;font-size:14px;
+           color:var(--y);letter-spacing:3px;
+           animation:scan-pulse 1.5s ease infinite}
+@keyframes scan-pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.scan-bar-wrap{width:300px;height:4px;background:rgba(255,255,255,0.1)}
+.scan-bar{height:100%;background:var(--y);width:0%;
+          transition:width 0.4s ease;animation:scan-fill 3s ease forwards}
+@keyframes scan-fill{0%{width:0%}100%{width:95%}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<!-- SCAN LOADING OVERLAY -->
+<div class="scan-overlay" id="scan-overlay">
+  <div style="font-size:32px">🤖</div>
+  <div class="scan-text" id="scan-text">AI SCANNING PROJECT...</div>
+  <div class="scan-bar-wrap"><div class="scan-bar" id="scan-bar"></div></div>
+  <div style="font-family:'Space Mono',monospace;font-size:11px;
+              color:rgba(255,230,0,0.5);letter-spacing:2px"
+       id="scan-sub">Analyzing risks...</div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="/tracker/{{ project.id }}" class="nav-back">← Tracker</a>
+    <div>
+      <div class="nav-logo">⚡ WAR ROOM</div>
+      <div class="nav-project">{{ project.title }}</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE MONITORING
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:10px;
+                color:var(--muted)" id="last-scan-time">
+      Never scanned
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- PROJECT HEADER -->
+  <div class="proj-header">
+    <div class="proj-info">
+      <div class="proj-name">{{ project.title }}</div>
+      <div class="proj-problem">
+        {{ project.problem[:150] }}{% if project.problem|length > 150 %}...{% endif %}
+      </div>
+      <div class="proj-tags">
+        <span class="ptag ptag-deadline">
+          📅 {{ project.deadline or 'No deadline' }}
+        </span>
+        <span class="ptag ptag-days" id="days-remaining-tag">
+          ⏱ Calculating...
+        </span>
+        <span class="ptag ptag-status" id="proj-status-tag">
+          {{ project.status.upper() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Health Ring -->
+    <div class="health-card">
+      <div class="sec-title" style="margin-bottom:12px">
+        Project Health
+      </div>
+      <div class="health-ring">
+        <svg viewBox="0 0 120 120" width="120" height="120">
+          <circle cx="60" cy="60" r="50" class="ring-bg"
+                  stroke-dasharray="314" stroke-dashoffset="0"/>
+          <circle cx="60" cy="60" r="50" class="ring-fill"
+                  id="health-ring-fill"
+                  stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct" id="health-pct"
+               style="color:var(--y)">0%</div>
+          <div class="ring-label">COMPLETE</div>
+        </div>
+      </div>
+      <div class="health-status-text" id="health-status-text"
+           style="color:var(--muted)">Loading...</div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:160px">
+      {% set done_count = project.tasks|selectattr('status','eq','done')|list|length %}
+      {% set total_count = project.tasks|length %}
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-family:'Orbitron',monospace;font-size:24px;
+                    font-weight:900;color:var(--g)">{{ done_count }}</div>
+        <div style="font-size:9px;font-family:'Space Mono',monospace;
+                    color:var(--muted);letter-spacing:2px;margin-top:4px">
+          DONE / {{ total_count }}
+        </div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-family:'Orbitron',monospace;font-size:24px;
+                    font-weight:900;color:var(--b)">
+          {{ project.members|length }}
+        </div>
+        <div style="font-size:9px;font-family:'Space Mono',monospace;
+                    color:var(--muted);letter-spacing:2px;margin-top:4px">
+          MEMBERS
+        </div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-family:'Orbitron',monospace;font-size:24px;
+                    font-weight:900;color:var(--purple)">
+          {{ project.work_logs|length }}
+        </div>
+        <div style="font-size:9px;font-family:'Space Mono',monospace;
+                    color:var(--muted);letter-spacing:2px;margin-top:4px">
+          WORK LOGS
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RISK RADAR ══ -->
+  <div class="risk-section">
+    <div class="sec-title">🔥 Risk Radar</div>
+    <div class="risk-grid">
+
+      <!-- Gauge -->
+      <div class="risk-gauge-card">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;
+                    letter-spacing:2px;color:var(--muted);margin-bottom:16px">
+          RISK SCORE
+        </div>
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 200 120">
+            <!-- Background arc (half circle) -->
+            <path d="M 20 100 A 80 80 0 0 1 180 100"
+                  class="gauge-bg" stroke-width="16"/>
+            <!-- Fill arc -->
+            <path d="M 20 100 A 80 80 0 0 1 180 100"
+                  class="gauge-fill" id="gauge-fill"
+                  stroke="#FFE600" stroke-width="16"
+                  stroke-dasharray="251" stroke-dashoffset="251"/>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-score" id="gauge-score"
+                 style="color:var(--y)">—</div>
+            <div class="gauge-label">RISK SCORE</div>
+          </div>
+        </div>
+
+        <div id="risk-level-badge" class="risk-level-badge"
+             style="background:rgba(255,255,255,0.06);
+                    color:var(--muted);border:1px solid rgba(255,255,255,0.1)">
+          NOT SCANNED
+        </div>
+
+        <div style="font-size:12px;color:var(--muted);
+                    margin-bottom:12px;line-height:1.5"
+             id="risk-summary-short">
+          Click scan to analyze project risks with AI
+        </div>
+
+        <button class="btn-scan" id="btn-scan" onclick="runRiskScan()">
+          🤖 SCAN FOR RISKS
+        </button>
+
+        <div style="font-size:10px;color:var(--muted);
+                    font-family:'Space Mono',monospace;
+                    text-align:center;margin-top:8px"
+             id="scan-time-label"></div>
+      </div>
+
+      <!-- Warnings + Recommendations -->
+      <div class="risk-details" id="risk-details">
+        <div style="text-align:center;padding:40px;
+                    color:var(--muted);font-size:13px">
+          Run an AI risk scan to see detailed warnings<br>
+          and recommendations for your project.
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk History Chart -->
+    <div class="risk-chart-card" id="risk-chart-card"
+         style="display:none">
+      <div class="sec-title">Risk Score History</div>
+      <div style="position:relative;height:160px">
+        <canvas id="riskChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LEADERBOARD ══ -->
+  <div class="lb-section">
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;margin-bottom:14px">
+      <div class="sec-title" style="margin-bottom:0">
+        🏅 Member Performance
+      </div>
+      <button onclick="refreshScores()"
+        style="background:rgba(255,230,0,0.08);
+               border:1px solid rgba(255,230,0,0.2);
+               color:var(--y);padding:6px 14px;cursor:pointer;
+               font-family:'Space Mono',monospace;font-size:9px;
+               letter-spacing:1px;transition:all 0.2s">
+        ↻ REFRESH SCORES
+      </button>
+    </div>
+    <div class="lb-grid" id="leaderboard-grid">
+      <div style="color:var(--muted);font-size:13px;
+                  padding:20px;grid-column:1/-1">
+        Loading scores...
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DAILY STANDUP ══ -->
+  <div class="standup-section">
+    <div class="standup-card">
+      <div class="standup-header">
+        <div>
+          <div class="sec-title" style="margin-bottom:4px">
+            📡 Daily AI Standup
+          </div>
+          <div class="standup-date" id="standup-date"></div>
+        </div>
+        <button class="btn-standup" id="btn-standup"
+                onclick="generateStandup()">
+          🤖 GENERATE TODAY'S REPORT
+        </button>
+      </div>
+      <div id="standup-content">
+        <div class="standup-empty-state">
+          <div style="font-size:32px;margin-bottom:12px">📋</div>
+          <div>No standup report yet for today.</div>
+          <div style="font-size:11px;margin-top:6px;color:rgba(240,240,232,0.3)">
+            Generate your first AI standup report to see
+            what the team accomplished and what's next.
+          </div>
+          <button onclick="generateStandup()"
+            style="margin-top:16px;padding:10px 24px;
+                   background:var(--y);color:#000;border:none;
+                   font-family:'Space Mono',monospace;font-size:10px;
+                   font-weight:700;letter-spacing:2px;cursor:pointer">
+            GENERATE NOW
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const PROJECT_ID = "{{ project.id }}";
+let riskChartInst = null;
+
+// ── Init ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today's date
+  document.getElementById('standup-date').textContent =
+    new Date().toLocaleDateString('en-GB', {
+      weekday:'long', year:'numeric',
+      month:'long', day:'numeric'
+    });
+
+  updateHealthRing();
+  loadRiskHistory();
+  loadLeaderboard();
+  loadLatestStandup();
+  calculateDaysRemaining();
+});
+
+// ── Health Ring ──────────────────────────────────────────────────
+function updateHealthRing() {
+  const pct = parseInt("{{ (project.calculate_progress() | round) | int }}", 10) || 0;
+  const circumference = 314;
+  const offset = circumference - (pct / 100) * circumference;
+
+  const ring = document.getElementById('health-ring-fill');
+  const text = document.getElementById('health-pct');
+  const stat = document.getElementById('health-status-text');
+
+  ring.style.strokeDashoffset = offset;
+  text.textContent = pct + '%';
+
+  let color, label;
+  if (pct >= 80)      { color='#00FF94'; label='EXCELLENT'; }
+  else if (pct >= 60) { color='#FFE600'; label='ON TRACK';  }
+  else if (pct >= 40) { color='#ff8c42'; label='AT RISK';   }
+  else                { color='#FF2D78'; label='BEHIND';    }
+
+  ring.style.stroke    = color;
+  text.style.color     = color;
+  stat.textContent     = label;
+  stat.style.color     = color;
+}
+
+// ── Days Remaining ───────────────────────────────────────────────
+function calculateDaysRemaining() {
+  const deadline = "{{ project.deadline or '' }}";
+  const tag = document.getElementById('days-remaining-tag');
+  if (!deadline) { tag.textContent = '⏱ No deadline'; return; }
+
+  const dl  = new Date(deadline);
+  const now = new Date();
+  const diff = Math.ceil((dl - now) / (1000 * 60 * 60 * 24));
+
+  if (diff > 0)      tag.textContent = `⏱ ${diff} days left`;
+  else if (diff < 0) tag.textContent = `⚠ ${Math.abs(diff)} days overdue`;
+  else               tag.textContent = `🔥 Due TODAY`;
+}
+
+// ── RISK SCAN ────────────────────────────────────────────────────
+async function runRiskScan() {
+  const btn = document.getElementById('btn-scan');
+  btn.disabled = true;
+
+  // Show scan overlay
+  showScanOverlay([
+    'Analyzing task progress...',
+    'Checking member activity...',
+    'Evaluating deadline risk...',
+    'Generating recommendations...',
+    'Finalizing risk report...',
+  ]);
+
+  try {
+    const res  = await fetch(`/api/risk_scan/${PROJECT_ID}`,
+                             { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error);
+
+    hideScanOverlay();
+    renderRiskResult(data.risk);
+    loadRiskHistory();
+
+    document.getElementById('last-scan-time').textContent =
+      'Last scan: ' + new Date().toLocaleTimeString();
+
+  } catch(e) {
+    hideScanOverlay();
+    alert('Scan failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderRiskResult(risk) {
+  // Update gauge
+  const score = risk.risk_score || 0;
+  const arc   = 251; // half-circle arc length
+  const offset = arc - (score / 100) * arc;
+  document.getElementById('gauge-fill').style.strokeDashoffset = offset;
+  document.getElementById('gauge-score').textContent = score;
+
+  // Risk level badge
+  const levelConfig = {
+    low:      { color:'#00FF94', bg:'rgba(0,255,148,0.12)',
+                border:'rgba(0,255,148,0.3)'  },
+    medium:   { color:'#FFE600', bg:'rgba(255,230,0,0.12)',
+                border:'rgba(255,230,0,0.3)'  },
+    high:     { color:'#ff8c42', bg:'rgba(255,140,66,0.12)',
+                border:'rgba(255,140,66,0.3)' },
+    critical: { color:'#FF2D78', bg:'rgba(255,45,120,0.12)',
+                border:'rgba(255,45,120,0.3)' },
+  };
+  const cfg   = levelConfig[risk.risk_level] || levelConfig.medium;
+  const badge = document.getElementById('risk-level-badge');
+  badge.textContent    = risk.risk_level.toUpperCase();
+  badge.style.color    = cfg.color;
+  badge.style.background = cfg.bg;
+  badge.style.border   = `1px solid ${cfg.border}`;
+
+  document.getElementById('gauge-score').style.color  = cfg.color;
+  document.getElementById('risk-summary-short').textContent =
+    risk.deadline_safe ? '✅ Deadline appears safe' : '⚠ Deadline at risk';
+
+  document.getElementById('scan-time-label').textContent =
+    'Scanned at ' + new Date().toLocaleTimeString();
+
+  // Detailed panel
+  const warnings = risk.warnings || [];
+  const recs     = risk.recommendations || [];
+
+  document.getElementById('risk-details').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div class="sec-title" style="margin-bottom:8px">AI Summary</div>
+      <div class="risk-summary">${risk.summary || '—'}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div class="sec-title" style="margin-bottom:8px;color:#FF2D78">
+          ⚠ Warnings (${warnings.length})
+        </div>
+        <ul class="warning-list">
+          ${warnings.map(w => `
+            <li class="warning-item">
+              <span class="warning-icon">⚠</span>
+              <span style="color:rgba(240,240,232,0.8)">${w}</span>
+            </li>`).join('') || '<li class="warning-item" style="color:var(--muted)">No warnings — looking good!</li>'}
+        </ul>
+      </div>
+      <div>
+        <div class="sec-title" style="margin-bottom:8px;color:#00FF94">
+          ✅ Recommendations (${recs.length})
+        </div>
+        <ul class="rec-list">
+          ${recs.map(r => `
+            <li class="rec-item">
+              <span class="rec-icon">›</span>
+              <span style="color:rgba(240,240,232,0.8)">${r}</span>
+            </li>`).join('') || '<li class="rec-item" style="color:var(--muted)">No specific actions needed.</li>'}
+        </ul>
+      </div>
+    </div>`;
+}
+
+// ── Risk History Chart ───────────────────────────────────────────
+async function loadRiskHistory() {
+  try {
+    const r    = await fetch(`/api/risk_history/${PROJECT_ID}`);
+    const data = await r.json();
+
+    if (!data.history || !data.history.length) return;
+
+    // Show chart card
+    document.getElementById('risk-chart-card').style.display = 'block';
+
+    // If latest risk exists render it
+    if (data.latest) renderRiskResult(data.latest);
+
+    const labels = data.history.map(h =>
+      h.scanned_at.slice(5, 16)  // MM-DD HH:MM
+    ).reverse();
+    const scores = data.history.map(h => h.risk_score).reverse();
+    const colors = scores.map(s =>
+      s >= 75 ? '#FF2D78' : s >= 50 ? '#ff8c42' :
+      s >= 25 ? '#FFE600' : '#00FF94'
+    );
+
+    if (riskChartInst) riskChartInst.destroy();
+    riskChartInst = new Chart(document.getElementById('riskChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data:            scores,
+          borderColor:     '#FFE600',
+          backgroundColor: 'rgba(255,230,0,0.06)',
+          borderWidth:     2,
+          fill:            true,
+          tension:         0.4,
+          pointBackgroundColor: colors,
+          pointRadius:     5,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color:'rgba(240,240,232,0.4)', font:{size:9} },
+               grid:  { color:'rgba(255,230,0,0.05)' } },
+          y: { min:0, max:100,
+               ticks: { color:'rgba(240,240,232,0.4)', font:{size:9} },
+               grid:  { color:'rgba(255,230,0,0.05)' } },
+        },
+      },
+    });
+
+    document.getElementById('last-scan-time').textContent =
+      'Last scan: ' + (data.latest?.scanned_at || '—');
+
+  } catch(e) { console.error('Risk history error:', e); }
+}
+
+// ── Leaderboard ──────────────────────────────────────────────────
+async function loadLeaderboard() {
+  try {
+    const r    = await fetch(`/api/leaderboard/${PROJECT_ID}`);
+    const data = await r.json();
+    renderLeaderboard(data.leaderboard || []);
+  } catch(e) { console.error('Leaderboard error:', e); }
+}
+
+async function refreshScores() {
+  try {
+    const r    = await fetch(`/api/update_scores/${PROJECT_ID}`,
+                             { method:'POST' });
+    const data = await r.json();
+    if (data.scores) renderLeaderboard(data.scores);
+  } catch(e) { console.error('Score update error:', e); }
+}
+
+function renderLeaderboard(scores) {
+  const grid = document.getElementById('leaderboard-grid');
+
+  if (!scores.length) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;
+                  padding:30px;color:var(--muted);font-size:13px">
+        No scores yet. Log work to start earning points!
+      </div>`;
+    return;
+  }
+
+  const avatarColors = [
+    '#FFE600','#00d4ff','#00FF94',
+    '#FF2D78','#b44dff','#ff8c42',
+  ];
+  const rankEmoji = ['🥇','🥈','🥉'];
+
+  grid.innerHTML = scores.map((s, i) => {
+    const initials = s.member_name.split(' ')
+      .map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const avatarColor = avatarColors[i % avatarColors.length];
+    const rankClass   = i < 3 ? `rank-${i+1}` : '';
+    const streakFire  = s.streak_days >= 3 ? '🔥'.repeat(
+      Math.min(s.streak_days >= 7 ? 3 : s.streak_days >= 5 ? 2 : 1, 3)
+    ) : '';
+
+    return `
+      <div class="member-card ${rankClass}">
+        <div class="member-rank">${rankEmoji[i] || '#' + (i+1)}</div>
+
+        <div class="member-avatar"
+             style="background:${avatarColor}22;
+                    border:2px solid ${avatarColor};
+                    color:${avatarColor}">
+          ${initials}
+        </div>
+
+        <div class="member-name-lb">${s.member_name}</div>
+        <div class="member-badge badge-${s.badge}">
+          ${s.badge.toUpperCase()}
+        </div>
+
+        <!-- Score bar -->
+        <div class="score-bar-wrap">
+          <div class="score-bar-label">
+            <span>Score</span>
+            <span style="color:${avatarColor};font-weight:700">
+              ${s.total_score}/100
+            </span>
+          </div>
+          <div class="score-bar">
+            <div class="score-fill"
+                 style="width:${s.total_score}%;
+                        background:${avatarColor}"></div>
+          </div>
+        </div>
+
+        <!-- Quality bar -->
+        <div class="score-bar-wrap">
+          <div class="score-bar-label">
+            <span>AI Approval Rate</span>
+            <span>${s.quality_pct}%</span>
+          </div>
+          <div class="score-bar">
+            <div class="score-fill"
+                 style="width:${s.quality_pct}%;
+                        background:rgba(0,255,148,0.7)"></div>
+          </div>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="member-stats">
+          <div class="mstat">
+            <div class="mstat-val" style="color:var(--g)">
+              ${s.tasks_completed}
+            </div>
+            <div class="mstat-label">Done</div>
+          </div>
+          <div class="mstat">
+            <div class="mstat-val" style="color:var(--b)">
+              ${s.total_hours}h
+            </div>
+            <div class="mstat-label">Hours</div>
+          </div>
+          <div class="mstat">
+            <div class="mstat-val" style="color:var(--y)">
+              ${s.streak_days}${streakFire}
+            </div>
+            <div class="mstat-label">Streak</div>
+          </div>
+          <div class="mstat">
+            <div class="mstat-val"
+                 style="color:${s.tasks_rejected > 0 ? 'var(--p)' : 'var(--muted)'}">
+              ${s.tasks_rejected}
+            </div>
+            <div class="mstat-label">Rejected</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Standup ──────────────────────────────────────────────────────
+async function loadLatestStandup() {
+  try {
+    const r    = await fetch(`/api/standup_history/${PROJECT_ID}`);
+    const data = await r.json();
+    if (data.latest) renderStandup(data.latest);
+  } catch(e) { console.error('Standup load error:', e); }
+}
+
+async function generateStandup() {
+  const btn = document.getElementById('btn-standup');
+  btn.disabled    = true;
+  btn.textContent = '🤖 Generating...';
+
+  showScanOverlay([
+    'Reviewing yesterday\'s work...',
+    'Identifying blockers...',
+    'Analyzing team activity...',
+    'Writing standup report...',
+  ]);
+
+  try {
+    const res  = await fetch(`/api/generate_standup/${PROJECT_ID}`,
+                             { method:'POST' });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error);
+
+    hideScanOverlay();
+    renderStandup(data.report);
+
+  } catch(e) {
+    hideScanOverlay();
+    alert('Standup generation failed: ' + e.message);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '🤖 REGENERATE REPORT';
+  }
+}
+
+function renderStandup(report) {
+  const healthConfig = {
+    excellent: { color:'#00FF94', label:'EXCELLENT' },
+    on_track:  { color:'#FFE600', label:'ON TRACK'  },
+    at_risk:   { color:'#ff8c42', label:'AT RISK'   },
+    behind:    { color:'#FF2D78', label:'BEHIND'    },
+  };
+  const hcfg = healthConfig[report.health_status] || healthConfig.on_track;
+
+  const completed = report.completed_tasks || [];
+  const inProg    = report.in_progress     || [];
+  const blockers  = report.blockers        || [];
+  const achiev    = report.achievements    || [];
+
+  document.getElementById('standup-content').innerHTML = `
+    <!-- Health banner -->
+    <div style="display:flex;align-items:center;gap:16px;
+                margin-bottom:16px;padding:12px 16px;
+                background:${hcfg.color}12;
+                border:1px solid ${hcfg.color}30">
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:18px;
+                    font-weight:900;color:${hcfg.color}">
+          ${report.health_score}
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;
+                    letter-spacing:2px;color:${hcfg.color}">
+          HEALTH
+        </div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:rgba(240,240,232,0.8);
+                    line-height:1.6">${report.summary}</div>
+      </div>
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;
+                    font-weight:700;color:${hcfg.color};letter-spacing:2px;
+                    padding:4px 12px;border:1px solid ${hcfg.color}40">
+          ${hcfg.label}
+        </div>
+        ${report.days_remaining !== null && report.days_remaining !== undefined
+          ? `<div style="font-size:10px;color:var(--muted);
+                         font-family:'Space Mono',monospace;
+                         text-align:center;margin-top:4px">
+               ${report.days_remaining > 0
+                 ? report.days_remaining + 'd left'
+                 : 'OVERDUE'}
+             </div>` : ''}
+      </div>
+    </div>
+
+    <!-- Health bar -->
+    <div class="health-bar-full" style="margin-bottom:16px">
+      <div class="health-bar-fill"
+           style="width:${report.health_score}%;
+                  background:${hcfg.color}"></div>
+    </div>
+
+    <!-- 3 columns -->
+    <div class="standup-grid">
+      <div class="standup-col">
+        <div class="standup-col-title" style="color:var(--g)">
+          ✅ Completed (${completed.length})
+        </div>
+        ${completed.length
+          ? completed.map(c =>
+              `<div class="standup-item">${c}</div>`).join('')
+          : '<div class="standup-empty">Nothing completed yet</div>'}
+      </div>
+      <div class="standup-col">
+        <div class="standup-col-title" style="color:var(--b)">
+          🔄 In Progress (${inProg.length})
+        </div>
+        ${inProg.length
+          ? inProg.map(p =>
+              `<div class="standup-item">${p}</div>`).join('')
+          : '<div class="standup-empty">Nothing in progress</div>'}
+      </div>
+      <div class="standup-col">
+        <div class="standup-col-title"
+             style="color:${blockers.length ? 'var(--p)' : 'var(--muted)'}">
+          ⚠ Blockers (${blockers.length})
+        </div>
+        ${blockers.length
+          ? blockers.map(b =>
+              `<div class="standup-item" style="color:rgba(255,45,120,0.8)">${b}</div>`).join('')
+          : '<div class="standup-empty" style="color:var(--g)">No blockers! 🎉</div>'}
+      </div>
+    </div>
+
+    ${achiev.length ? `
+      <div style="margin-top:12px;padding:10px 14px;
+                  background:rgba(255,230,0,0.06);
+                  border-left:3px solid var(--y)">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;
+                    letter-spacing:2px;color:var(--y);margin-bottom:6px">
+          🏆 ACHIEVEMENTS
+        </div>
+        ${achiev.map(a =>
+          `<div style="font-size:12px;color:rgba(240,240,232,0.8);
+                       margin-bottom:4px">★ ${a}</div>`).join('')}
+      </div>` : ''}
+
+    <div class="ai-advice-box">
+      <div class="ai-advice-label">🤖 AI ADVICE FOR TODAY</div>
+      <div class="ai-advice-text">${report.ai_advice || '—'}</div>
+    </div>
+
+    <div style="font-family:'Space Mono',monospace;font-size:10px;
+                color:rgba(240,240,232,0.25);text-align:right;
+                margin-top:10px">
+      Generated: ${report.generated_at}
+    </div>`;
+}
+
+// ── Scan Overlay ─────────────────────────────────────────────────
+function showScanOverlay(steps) {
+  const overlay = document.getElementById('scan-overlay');
+  const text    = document.getElementById('scan-text');
+  const sub     = document.getElementById('scan-sub');
+  const bar     = document.getElementById('scan-bar');
+
+  overlay.classList.add('active');
+  bar.style.width = '0%';
+
+  let i = 0;
+  function nextStep() {
+    if (i >= steps.length) return;
+    sub.textContent = steps[i++];
+    bar.style.width = (i / steps.length * 90) + '%';
+    setTimeout(nextStep, 900);
+  }
+  nextStep();
+}
+function hideScanOverlay() {
+  const bar = document.getElementById('scan-bar');
+  bar.style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('scan-overlay').classList.remove('active');
+  }, 400);
+}
+</script>
+</body>
+</html>

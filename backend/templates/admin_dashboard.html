@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Portal — Smart Solve AI{% endblock %}
+{% block page_title %}Admin Control Panel{% endblock %}
+
+{% block content %}
+<div class="admin-wrapper anim-fade-up" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+
+    <!-- KPI STATS SECTION -->
+    <section class="admin-kpi-row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+        <div class="stat-box">
+            <div class="stat-num" id="kpi-total-projects">0</div>
+            <div class="stat-label">Total Projects</div>
+        </div>
+        <div class="stat-box" id="kpi-pending-box">
+            <div class="stat-num" id="kpi-pending-approvals">0</div>
+            <div class="stat-label">Pending Approvals</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num" id="kpi-team-size">0</div>
+            <div class="stat-label">Team Members</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num" id="kpi-completion-rate">0%</div>
+            <div class="stat-label">Complete Rate</div>
+        </div>
+    </section>
+
+    <!-- PENDING APPROVALS ALERT -->
+    <div id="approvals-section" style="margin-bottom:24px;display:none">
+      <div class="sec-header" style="margin-bottom: 16px;">
+        <div class="sec-title" style="color:#FF2D78; font-family:'Space Mono',monospace; font-size:14px; letter-spacing:2px; font-weight:700;">
+          ⚠ Pending Approvals
+          <span id="pending-count"
+                style="background:#FF2D78;color:#000;
+                       font-size:10px;padding:2px 8px;
+                       margin-left:8px;font-family:'Space Mono',monospace">
+            0
+          </span>
+        </div>
+        <div style="font-size:11px;color:rgba(240,240,232,0.4);
+                    font-family:'Space Mono',monospace">
+          Review and approve task completions submitted by team members
+        </div>
+      </div>
+      <div id="approvals-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+    </div>
+
+    <!-- GLOBAL HISTORY -->
+    <section class="glass-card">
+        <div class="panel-header" style="margin-bottom: 20px;">
+            <span class="section-label">SYSTEM-WIDE PROJECTS</span>
+        </div>
+        <div id="admin-project-list" class="admin-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <p class="empty-msg" style="text-align: center; opacity: 0.5; padding: 40px;">Fetching project data...</p>
+        </div>
+    </section>
+
+</div>
+
+<style>
+.stat-box {
+  background: rgba(26, 26, 26, 0.8);
+  border: 2px solid rgba(255, 230, 0, 0.2);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.2s;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+}
+.stat-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--c-brand);
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 10px;
+  color: var(--c-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#kpi-pending-box.has-pending {
+  border-color: #FF2D78;
+  color: #FF2D78;
+}
+#kpi-pending-box.has-pending .stat-num { color: #FF2D78; }
+
+.approval-card {
+    background: rgba(255, 45, 120, 0.05);
+    border: 2px solid rgba(255, 45, 120, 0.3);
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+.approval-info { flex: 1; }
+.approval-task-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; color: #fff; }
+.approval-meta { font-size: 12px; color: var(--c-muted); margin-bottom: 10px; }
+.approval-note { background: rgba(0,0,0,0.3); padding: 10px; border-left: 2px solid #FF2D78; font-size: 13px; font-style: italic; color: #f0f0e8; }
+.approval-actions { display: flex; flex-direction: column; gap: 8px; min-width: 140px; }
+.btn-approve { background: #00FF94; color: #000; border: none; padding: 8px; font-weight: 700; font-family: 'Space Mono', monospace; cursor: pointer; }
+.btn-reject { background: none; border: 1px solid #FF2D78; color: #FF2D78; padding: 8px; font-size: 10px; cursor: pointer; }
+</style>
+
+<script>
+const SECRET = new URLSearchParams(window.location.search).get('secret') || 'admin-smartsolve-2024';
+
+// ── Load Stats ─────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(`/api/admin/projects?secret=${SECRET}`);
+    const d = await r.json();
+    if (d.error) return;
+
+    document.getElementById('kpi-total-projects').textContent = d.total_projects;
+    // ... future: calculate completion rate across all tasks ...
+  } catch(e) { console.error(e); }
+}
+
+// ── Load Global Projects ──────────────────────────────────
+async function loadProjects() {
+  try {
+    const r = await fetch(`/api/admin/projects?secret=${SECRET}`);
+    const d = await r.json();
+    const list = document.getElementById('admin-project-list');
+
+    if (!d.projects || d.projects.length === 0) {
+      list.innerHTML = '<p class="empty-msg">No projects found in system.</p>';
+      return;
+    }
+
+    list.innerHTML = d.projects.map(p => `
+      <div class="history-item" style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); padding:15px; border:2px solid var(--c-border); margin-bottom:10px;">
+          <div>
+              <div style="font-weight:900; font-family:var(--font-display); font-size:16px;">${p.title}</div>
+              <div style="font-size:11px; color:var(--c-muted); margin-top:4px;">${p.user_email} • ${p.task_count} tasks • ${p.progress}%</div>
+          </div>
+          <button class="filter-btn sm-save" onclick="window.location.href='/tracker/${p.id}'" style="border-color:var(--c-brand); color:var(--c-brand);">View as Admin</button>
+      </div>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── Load Pending Approvals ────────────────────────────────────────
+async function loadPendingApprovals() {
+  try {
+    const r = await fetch(`/api/admin/pending_approvals?secret=${SECRET}`);
+    const d = await r.json();
+    if (d.error) return;
+
+    const section = document.getElementById('approvals-section');
+    const list    = document.getElementById('approvals-list');
+    const count   = document.getElementById('pending-count');
+    const kpiCount = document.getElementById('kpi-pending-approvals');
+    const kpiBox = document.getElementById('kpi-pending-box');
+
+    // d is expected to be { total_pending: X, tasks: [...] } based on backend
+    // but the backend might just return the list []. Let's check consistency.
+    // If backend returns a list, total_pending index won't exist.
+    // I'll check both.
+    const tasks = Array.isArray(d) ? d : (d.tasks || []);
+    const total = Array.isArray(d) ? d.length : (d.total_pending || 0);
+
+    if (!total) {
+      section.style.display = 'none';
+      kpiCount.textContent = '0';
+      kpiBox.classList.remove('has-pending');
+      return;
+    }
+
+    section.style.display = 'block';
+    count.textContent     = total;
+    kpiCount.textContent  = total;
+    kpiBox.classList.add('has-pending');
+
+    list.innerHTML = tasks.map(t => `
+      <div style="background:#111;border:2px solid rgba(255,45,120,0.3);
+                  padding:18px;margin-bottom:12px">
+
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;
+                    align-items:start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#F0F0E8;
+                        margin-bottom:4px">${t.name}</div>
+            <div style="font-size:11px;color:rgba(240,240,232,0.4);
+                        font-family:'Space Mono',monospace">
+              Project: ${t.project_title} ·
+              Submitted by: <span style="color:#FFE600">${t.submitted_by}</span> ·
+              ${t.submitted_at}
+            </div>
+          </div>
+          <span style="background:rgba(255,170,0,0.15);
+                       border:1px solid rgba(255,170,0,0.3);
+                       color:#ffaa00;font-family:'Space Mono',monospace;
+                       font-size:9px;padding:3px 10px">
+            AWAITING REVIEW
+          </span>
+        </div>
+
+        <!-- Completion note -->
+        <div style="background:rgba(0,0,0,0.4);border-left:3px solid #FFE600;
+                    padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:10px;color:rgba(255,230,0,0.5);
+                      font-family:'Space Mono',monospace;
+                      letter-spacing:2px;margin-bottom:6px">
+            COMPLETION DESCRIPTION
+          </div>
+          <div style="font-size:13px;color:#F0F0E8;line-height:1.6">
+            ${t.completion_note}
+          </div>
+        </div>
+
+        <!-- Proof file/link -->
+        ${t.completion_file ? `
+          <div style="margin-bottom:12px">
+            <a href="/uploads/${t.completion_file}" target="_blank"
+               style="color:#00d4ff;font-size:12px;
+                      font-family:'Space Mono',monospace;
+                      text-decoration:none;
+                      border-bottom:1px solid rgba(0,212,255,0.3)">
+              📎 View Proof File →
+            </a>
+          </div>` : ''}
+
+        ${t.completion_url ? `
+          <div style="margin-bottom:12px">
+            <a href="${t.completion_url}" target="_blank"
+               style="color:#00d4ff;font-size:12px;
+                      font-family:'Space Mono',monospace;
+                      text-decoration:none;
+                      border-bottom:1px solid rgba(0,212,255,0.3)">
+              🔗 View Proof Link →
+            </a>
+          </div>` : ''}
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button onclick="approveTask(${t.db_id || t.id})"
+            style="flex:1;padding:12px;background:#00FF94;color:#000;
+                   border:2px solid #000;
+                   font-family:'Space Mono',monospace;font-size:11px;
+                   font-weight:700;letter-spacing:2px;cursor:pointer;
+                   transition:all 0.15s;min-width:140px">
+            ✅ APPROVE
+          </button>
+
+          <div style="flex:2;display:flex;gap:6px">
+            <input type="text" id="reject-reason-${t.db_id || t.id}"
+              placeholder="Reason for rejection (required)..."
+              style="flex:1;background:rgba(0,0,0,0.5);
+                     border:2px solid rgba(255,45,120,0.3);
+                     color:#F0F0E8;font-family:'Space Grotesk',sans-serif;
+                     font-size:12px;padding:8px 12px;outline:none">
+            <button onclick="rejectTask(${t.db_id || t.id})"
+              style="padding:12px 18px;background:rgba(255,45,120,0.15);
+                     color:#FF2D78;
+                     border:2px solid rgba(255,45,120,0.4);
+                     font-family:'Space Mono',monospace;font-size:11px;
+                     font-weight:700;letter-spacing:1px;cursor:pointer;
+                     transition:all 0.15s">
+              ❌ REJECT
+            </button>
+          </div>
+        </div>
+
+        <div id="approval-msg-${t.db_id || t.id}" style="display:none;margin-top:8px;
+             padding:8px;font-family:'Space Mono',monospace;font-size:11px"></div>
+      </div>`
+    ).join('');
+
+  } catch(e) { console.error('Approvals error:', e); }
+}
+
+async function approveTask(taskDbId) {
+  try {
+    const r = await fetch(`/api/admin/approve_task?secret=${SECRET}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ task_db_id: taskDbId, reviewer: 'Admin' }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    const msg = document.getElementById(`approval-msg-${taskDbId}`);
+    msg.textContent   = `✅ Task approved! Project progress: ${Math.round(d.project_progress)}%`;
+    msg.style.color   = '#00FF94';
+    msg.style.display = 'block';
+
+    // Reload after 1.5 seconds
+    setTimeout(() => { loadPendingApprovals(); loadProjects(); loadStats(); }, 1500);
+
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function rejectTask(taskDbId) {
+  const reason = document.getElementById(`reject-reason-${taskDbId}`).value.trim();
+  if (!reason) {
+    alert('Please enter a reason for rejection');
+    return;
+  }
+  try {
+    const r = await fetch(`/api/admin/reject_task?secret=${SECRET}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ task_db_id: taskDbId, reason, reviewer: 'Admin' }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    const msg = document.getElementById(`approval-msg-${taskDbId}`);
+    msg.textContent   = `❌ Rejected. Member will be notified to resubmit.`;
+    msg.style.color   = '#FF2D78';
+    msg.style.display = 'block';
+
+    setTimeout(() => { loadPendingApprovals(); }, 1500);
+
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── Call on page load ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+  loadProjects();
+  loadPendingApprovals();
+  setInterval(loadPendingApprovals, 20000); // refresh every 20s
+});
+</script>
+{% endblock %}

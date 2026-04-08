@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Solve AI{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;900&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='animations.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* Sidebar layout styles */
+        :root {
+            --sidebar-width: 250px;
+            --top-header-height: 80px;
+        }
+        
+        body {
+            margin: 0;
+            padding-top: var(--top-header-height);
+        }
+
+        .top-app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--top-header-height);
+            background: var(--c-brand);
+            border-bottom: var(--b-width) solid var(--c-black);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .user-auth-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 250px;
+            justify-content: flex-end;
+        }
+
+        #google-auth-btn {
+            height: 40px;
+        }
+
+        .btn-logout {
+            background: var(--c-accent);
+            padding: 6px 12px;
+            border: 2px solid #000;
+            font-weight: 945;
+            font-family: var(--font-display);
+            cursor: pointer;
+            font-size: 11px;
+            letter-spacing: 1px;
+            box-shadow: 2px 2px 0px #000;
+            transition: all 0.1s;
+        }
+
+        .btn-logout:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px #000;
+            background: var(--c-pink);
+        }
+
+        .top-app-header .logo-text {
+            font-size: clamp(28px, 6vw, 48px);
+            font-weight: 800;
+            letter-spacing: 12px;
+            color: var(--c-black);
+            text-transform: uppercase;
+            font-family: 'Syne', sans-serif;
+            position: relative;
+            /* Unique Stylization: Layered Look */
+            text-shadow: 
+                3px 3px 0px var(--c-bg), 
+                6px 6px 0px var(--c-black);
+            transition: all 0.3s ease;
+        }
+
+        .top-app-header:hover .logo-text {
+            transform: skew(-5deg) scale(1.02);
+            text-shadow: 
+                2px 2px 0px var(--c-accent), 
+                4px 4px 0px var(--c-black);
+        }
+        
+        .app-layout {
+            display: flex;
+            min-height: calc(100vh - var(--top-header-height));
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #FFD600; /* Bold Yellow */
+            border-right: var(--b-width) solid var(--c-black);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: var(--top-header-height);
+            height: calc(100vh - var(--top-header-height));
+            z-index: 150;
+        }
+        
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: var(--b-width) solid var(--c-black);
+            background: #FFD600;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 12px;
+            background: #FFD600;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            color: var(--c-black);
+            text-decoration: none;
+            border: 2px solid transparent;
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        
+        .nav-item:hover {
+            background: var(--c-brand);
+            border-color: var(--c-black);
+            box-shadow: 4px 4px 0px var(--c-black);
+            transform: translate(-2px, -2px);
+        }
+        
+        .nav-item.active {
+            background: var(--c-purple);
+            color: var(--c-black);
+            border-color: var(--c-black);
+            box-shadow: 4px 4px 0px var(--c-black);
+            transform: translate(-2px, -2px);
+        }
+        
+        .sidebar-footer {
+            padding: 20px;
+            border-top: var(--b-width) solid var(--c-black);
+            background: #f0f0f0;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            background: #ffffff;
+        }
+        
+        @media(max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+                top: var(--top-header-height);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Persistent Top Header -->
+    <div class="top-app-header">
+        <div style="width: 200px;"></div> <!-- Spacer to center the logo -->
+        <div class="logo-text">SMART SOLVE PRO</div>
+        <div class="user-auth-area">
+            <div id="google-auth-btn"></div>
+            <div id="user-info" class="badge" style="display: none; background: #fff; border: 2px solid #000; padding: 5px 10px; font-weight: 700;"></div>
+        </div>
+    </div>
+
+    <!-- Ambient background -->
+    <div class="bg-canvas" aria-hidden="true">
+        <div class="bg-grid"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="scan-line"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-header">
+                <span class="logo-icon" style="font-size: 24px;">◈</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                    Executive Dashboard
+                </a>
+                <a href="/planner" class="nav-item {% if active_page == 'planner' %}active{% endif %}">
+                    Architecture Planner
+                </a>
+                <a href="/team" class="nav-item {% if active_page == 'team' %}active{% endif %}">
+                    Resource Allocation
+                </a>
+                <a href="/knowledge" class="nav-item {% if active_page == 'knowledge' %}active{% endif %}">
+                    Knowledge Repository
+                </a>
+                <a href="/settings" class="nav-item {% if active_page == 'settings' %}active{% endif %}">
+                    System Parameters
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="ai-mode-badge" id="sidebar-ai-badge">AI Online</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="site-header">
+                <div class="header-inner">
+                    <h2 class="section-label" style="margin: 0;">{% block page_title %}Overview{% endblock %}</h2>
+                    <div class="header-badges">
+                        <button class="btn-history-toggle" onclick="toggleHistory()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h6l3 3h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg>
+                            History
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="main-container">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- History Drawer (from original index.html) -->
+    <div id="history-drawer" class="history-drawer hidden">
+        <div class="history-header">
+            <span class="section-label">RECENT PROJECTS</span>
+            <button class="btn-close" onclick="toggleHistory()">✕</button>
+        </div>
+        <div id="history-list" class="history-list">
+            <p class="empty-msg">No projects yet. Generate your first plan!</p>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Use your Google Client ID here
+        const GOOGLE_CLIENT_ID = "{{ google_client_id or '' }}";
+
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            
+            // Send to backend
+            fetch("/api/auth/google", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: response.credential })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showUser(data.user);
+                }
+            })
+            .catch(e => console.error("Login Error:", e));
+        }
+
+        function showUser(user) {
+            const btn = document.getElementById('google-auth-btn');
+            const info = document.getElementById('user-info');
+            btn.style.display = 'none';
+            info.style.display = 'flex';
+            info.style.alignItems = 'center';
+            info.style.gap = '10px';
+            info.innerHTML = `
+                <img src="${user.picture}" style="width:24px;border-radius:50%;border: 1px solid #000;"> 
+                <span style="font-size: 13px;">${user.name}</span>
+                <button onclick="logout()" class="btn-logout">LOGOUT</button>
+            `;
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            if (window.google) {
+                google.accounts.id.disableAutoSelect();
+            }
+            window.location.href = window.location.pathname; // Redirect to refresh state
+        }
+
+        window.onload = function () {
+            if (localStorage.getItem('user')) {
+                showUser(JSON.parse(localStorage.getItem('user')));
+            }
+
+            if (GOOGLE_CLIENT_ID) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("google-auth-btn"),
+                    { theme: "outline", size: "large", type: "standard", shape: "rectangular" }
+                );
+            }
+        }
+
+        // Apply UI Settings immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('smart-solve-theme') || 'dark';
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            
+            const anims = localStorage.getItem('smart-solve-animations') !== 'false';
+            if (!anims) {
+                document.body.classList.add('no-animations');
+            }
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set active state in sidebar based on current path
+            const path = window.location.pathname;
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if(item.getAttribute('href') === path) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        });
+
+        function toggleHistory() {
+            const drawer = document.getElementById('history-drawer');
+            drawer.classList.toggle('hidden');
+            drawer.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tracker — {{ project.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='tracker.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="tracker-nav">
+  <a href="/" class="nav-back">← Back to Planner</a>
+  <div class="nav-title">
+    ⚡ DAILY TRACKER
+    <span class="project-id-tag">{{ project.id }}</span>
+  </div>
+  <div class="nav-right" style="display:flex; align-items:center; gap:16px;">
+    <span id="overall-progress-nav">0% Complete</span>
+    <a href="/warroom/{{ project.id }}"
+       style="background:rgba(255,230,0,0.1);
+              border:1px solid rgba(255,230,0,0.3);
+              color:#FFE600;text-decoration:none;
+              font-family:'Space Mono',monospace;font-size:10px;
+              padding:6px 14px;letter-spacing:1px;
+              transition:all 0.2s; white-space:nowrap;">
+      ⚡ WAR ROOM
+    </a>
+  </div>
+</nav>
+
+<!-- PAGE WRAPPER -->
+<div class="tracker-wrapper">
+
+  <!-- PROJECT HEADER -->
+  <div class="project-header-card">
+    <div class="project-header-left">
+      <h1 class="project-title">{{ project.title }}</h1>
+      <p class="project-problem">{{ project.problem[:120] }}...</p>
+      <div class="project-meta-row">
+        <span class="meta-tag">📅 {{ project.deadline or 'No deadline' }}</span>
+        <span class="meta-tag">📋 {{ project.tasks|length }} Tasks</span>
+        <span class="meta-tag">👥 {{ project.members|length }} Members</span>
+        <span class="meta-tag status-tag" id="project-status-tag">
+          {{ project.status.upper() }}
+        </span>
+      </div>
+    </div>
+    <div class="project-header-right">
+      <div class="big-progress-ring">
+        <svg viewBox="0 0 120 120" class="ring-svg">
+          <circle cx="60" cy="60" r="50" class="ring-bg"/>
+          <circle cx="60" cy="60" r="50" class="ring-fill" id="ring-fill"
+                  stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="ring-text" id="ring-text">0%</div>
+      </div>
+      <div class="progress-label">Overall Progress</div>
+    </div>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-todo">—</div>
+      <div class="stat-label">To Do</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-inprog">—</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-done">—</div>
+      <div class="stat-label">Done</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-hours">—</div>
+      <div class="stat-label">Total Hours</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-logs">—</div>
+      <div class="stat-label">Work Logs</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="tracker-main-grid">
+
+    <!-- LEFT: TASK LIST -->
+    <div class="task-panel">
+      <div class="panel-header">
+        📋 Tasks
+        <div class="filter-tabs">
+          <button class="ftab active" onclick="filterTasks('all',this)">All</button>
+          <button class="ftab" onclick="filterTasks('todo',this)">Todo</button>
+          <button class="ftab" onclick="filterTasks('in_progress',this)">Active</button>
+          <button class="ftab" onclick="filterTasks('done',this)">Done</button>
+        </div>
+      </div>
+      <div class="task-list" id="task-list">
+        {% for task in project.tasks %}
+        <div class="task-item {{ task.status }}"
+             data-task-id="{{ task.id }}"
+             data-task-num="{{ task.task_number }}"
+             data-status="{{ task.status }}"
+             data-type="{{ task.type }}"
+             onclick="selectTask(this)">
+          <div class="task-item-top">
+            <span class="task-type-dot type-{{ task.type }}"></span>
+            <span class="task-item-name">{{ task.name }}</span>
+            <span class="task-priority pri-{{ task.priority }}">
+              {{ task.priority }}
+            </span>
+          </div>
+          <div class="task-item-meta">
+            <span class="task-assignee">👤 {{ task.assignee or 'Unassigned' }}</span>
+            <span class="task-dur">⏱ {{ task.duration }}d</span>
+          </div>
+          <div class="task-progress-bar">
+            <div class="task-progress-fill"
+                 data-progress="{{ task.progress or 0 }}"></div>
+          </div>
+          <div class="task-progress-p          <div class="task-action-row">
+            <!-- Active button — still direct -->
+            <button onclick="quickStatus(event,'{{ task.db_id }}','in_progress')"
+              class="sbtn sbtn-active {% if task.status == 'in_progress' %}active{% endif %}">
+              ▶ Set Active
+            </button>
+
+            <!-- Done button — now opens proof modal -->
+            {% if task.approval_status == 'pending' %}
+              <div class="sbtn sbtn-pending" title="Waiting for admin approval">
+                ⏳ Pending Review
+              </div>
+
+            {% elif task.approval_status == 'rejected' %}
+              <div class="sbtn sbtn-rejected"
+                   title="{{ task.rejection_reason }}">
+                ❌ Rejected
+              </div>
+              <button onclick="openProofModal('{{ task.db_id }}','{{ task.name }}')"
+                class="sbtn sbtn-resubmit">
+                ↩ Resubmit
+              </button>
+
+            {% elif task.status == 'done' %}
+              <div class="sbtn sbtn-done">✅ Approved Done</div>
+
+            {% else %}
+              <button onclick="openProofModal('{{ task.db_id }}','{{ task.name }}')"
+                class="sbtn sbtn-done-req">
+                ✔ Mark as Done
+              </button>
+            {% endif %}
+          </div>
+          <!-- AI Review Analysis Placeholder -->
+          <div class="task-ai-analysis {% if task.ai_review %}task-ai-analysis-visible{% else %}task-ai-analysis-hidden{% endif %}" 
+               id="ai-review-{{ task.db_id }}">
+            <div class="task-ai-analysis-header">🧠 AI PRE-REVIEW ANALYSIS</div>
+            <div class="ai-review-content">
+              {% if task.ai_review %}
+                <div style="margin-bottom:4px;">{{ task.ai_review.summary }}</div>
+                {% if task.ai_review.errors and task.ai_review.errors|length > 0 %}
+                <div style="color:#FF2D78; font-size:10px;">• {{ task.ai_review.errors[0] }}</div>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- RIGHT: WORK LOG FORM + ACTIVITY -->
+    <div class="log-panel">
+
+  <!-- LOG FORM -->
+  <div class="log-form-card" id="log-form-card">
+    <div class="panel-header">📝 Log Today's Work</div>
+
+    <div class="form-hint" id="form-hint">
+      ← Select a task from the left to log work
+    </div>
+
+    <div class="log-form" id="log-form" style="display:none">
+
+      <div class="selected-task-banner" id="selected-task-banner"></div>
+
+      <!-- AI Badge -->
+      <div style="display:flex;align-items:center;gap:8px;
+                  margin-bottom:14px;padding:8px 12px;
+                  background:rgba(255,230,0,0.06);
+                  border:1px solid rgba(255,230,0,0.2)">
+        <span style="font-size:16px">🤖</span>
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;
+                      letter-spacing:2px;color:var(--y)">
+            AI PROGRESS TRACKING
+          </div>
+          <div style="font-size:11px;color:rgba(240,240,232,0.5);
+                      margin-top:2px">
+            Progress is calculated automatically by AI
+            based on your description — no manual input needed
+          </div>
+        </div>
+      </div>
+
+      <!-- Member -->
+      <div class="form-row">
+        <label>Team Member</label>
+        <select id="member-select">
+          {% for member in project.members %}
+          <option value="{{ member.name }}">{{ member.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Date -->
+      <div class="form-row">
+        <label>Date</label>
+        <input type="date" id="log-date">
+      </div>
+
+      <!-- Hours -->
+      <div class="form-row">
+        <label>Hours Worked <span style="color:var(--p)">*</span></label>
+        <input type="number" id="hours-worked"
+               min="0.5" max="24" step="0.5"
+               placeholder="e.g. 4.5"
+               oninput="previewAIEstimate()">
+        <div style="font-size:10px;color:var(--muted);
+                    font-family:'Space Mono',monospace;margin-top:4px"
+             id="hours-hint"></div>
+      </div>
+
+      <!-- Work description -->
+      <div class="form-row">
+        <label>
+          What was done today?
+          <span style="color:var(--p)">*</span>
+          <span style="font-size:9px;color:var(--muted);
+                       font-weight:normal;letter-spacing:0;
+                       font-family:'Inter',sans-serif">
+            (be specific — AI reads this to calculate progress)
+          </span>
+        </label>
+        <textarea id="work-done" rows="4"
+          placeholder="Be specific! The AI uses this to calculate progress.
+
+Good examples:
+✅ 'Completed the login API endpoint with JWT auth, wrote 8 unit tests, all passing'
+✅ 'Finished 3 of 5 wireframe screens in Figma, got feedback from team'
+
+Vague examples (AI will give low progress):
+❌ 'Worked on the task'
+❌ 'Did some coding'"
+          oninput="updateDescriptionQuality()"></textarea>
+
+        <!-- Description quality indicator -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <div style="font-family:'Space Mono',monospace;font-size:9px;
+                      color:var(--muted)">DESCRIPTION QUALITY:</div>
+          <div style="flex:1;height:4px;
+                      background:rgba(255,255,255,0.08)">
+            <div id="quality-bar"
+                 style="height:100%;width:0%;
+                        background:var(--p);transition:all 0.3s"></div>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;
+                      min-width:40px" id="quality-label"
+               style="color:var(--muted)">POOR</div>
+        </div>
+      </div>
+
+      <!-- Blockers -->
+      <div class="form-row">
+        <label>Blockers / Issues
+          <span style="color:var(--muted);font-size:9px;
+                       letter-spacing:0;font-family:'Inter',sans-serif">
+            (optional — affects AI progress calculation)
+          </span>
+        </label>
+        <textarea id="blockers" rows="2"
+          placeholder="Any blockers? AI will account for these when calculating progress..."></textarea>
+      </div>
+
+      <!-- AI Preview Box -->
+      <div id="ai-preview-box" style="display:none;
+           margin-bottom:14px;padding:14px;
+           background:rgba(255,230,0,0.04);
+           border:1px solid rgba(255,230,0,0.15)">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;
+                    letter-spacing:2px;color:var(--y);margin-bottom:8px">
+          🤖 AI WILL LIKELY ESTIMATE
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Orbitron',monospace;font-size:28px;
+                      font-weight:900;color:var(--y)" id="preview-pct">
+            ~?%
+          </div>
+          <div style="font-size:11px;color:var(--muted);
+                      line-height:1.5" id="preview-hint">
+            Fill in hours and description for AI estimate
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-log-work" id="btn-log-work"
+              onclick="submitWorkLog()">
+        🤖 SAVE & LET AI CALCULATE PROGRESS
+      </button>
+
+      <!-- AI Result Box (shown after save) -->
+      <div id="ai-result-box" style="display:none"></div>
+
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <div class="activity-card">
+    <div class="panel-header">
+      📅 Activity Feed
+      <select id="activity-filter" onchange="loadActivityFeed()">
+        <option value="all">All Members</option>
+        {% for member in project.members %}
+        <option value="{{ member.name }}">{{ member.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="activity-feed" id="activity-feed">
+      <div class="activity-empty">No work logged yet.</div>
+    </div>
+  </div>
+
+</div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Hours Per Member</div>
+      <div style="position:relative;height:220px">
+        <canvas id="memberChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Daily Hours (Last 7 Days)</div>
+      <div style="position:relative;height:220px">
+        <canvas id="dailyChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Task Status Breakdown</div>
+      <div style="position:relative;height:220px">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tracker-wrapper -->
+
+<input type="hidden" id="tracker-data" 
+       data-project-id="{{ project.id }}" 
+       data-members='{{ members | tojson | safe }}'>
+
+<script>
+  (function() {
+    const dataEl = document.getElementById('tracker-data');
+    window.PROJECT_ID = dataEl.dataset.projectId;
+    window.PROJECT_MEMBERS = JSON.parse(dataEl.dataset.members);
+    
+    // Resolve UI elements that IDE might flag
+    document.querySelectorAll('.task-progress-fill').forEach(el => {
+      el.style.width = el.dataset.progress + '%';
+    });
+  })();
+</script>
+<!-- ══ COMPLETION PROOF MODAL ══ -->
+<div class="proof-overlay" id="proof-overlay">
+  <div class="proof-modal">
+
+    <div class="proof-header">
+      <div class="proof-title">✔ Submit Completion Proof</div>
+      <button class="proof-close" onclick="closeProofModal()">✕</button>
+    </div>
+
+    <div class="proof-task-name" id="proof-task-name"></div>
+
+    <div class="proof-warning">
+      ⚠ Your submission will be reviewed by the admin before
+      this task is marked as Done. Make sure your proof is clear.
+    </div>
+
+    <input type="hidden" id="proof-task-id">
+
+    <!-- Member -->
+    <div class="proof-field">
+      <label>Your Name</label>
+      <select id="proof-member">
+        {% for member in project.members %}
+        <option value="{{ member.name }}">{{ member.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- What was done -->
+    <div class="proof-field">
+      <label>What exactly was completed? <span class="req">*</span></label>
+      <textarea id="proof-note" rows="4"
+        placeholder="Describe in detail what you finished...
+e.g. Completed the login API with JWT auth, tested all edge cases,
+wrote unit tests, pushed to GitHub branch feature/auth"></textarea>
+    </div>
+
+    <!-- File upload -->
+    <div class="proof-field">
+      <label>Upload Proof File <span class="opt">(screenshot / doc / zip)</span></label>
+      <div class="file-drop-zone" id="file-drop-zone"
+           onclick="document.getElementById('proof-file').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleFileDrop(event)">
+        <div class="file-drop-icon">📎</div>
+        <div class="file-drop-text" id="file-drop-text">
+          Click or drag file here
+        </div>
+        <div class="file-drop-sub">PNG, JPG, PDF, ZIP, DOCX, MP4 accepted</div>
+      </div>
+      <input type="file" id="proof-file" style="display:none"
+             accept=".png,.jpg,.jpeg,.gif,.pdf,.zip,.txt,.docx,.mp4"
+             onchange="handleFileSelect(this)">
+    </div>
+
+    <!-- Link proof -->
+    <div class="proof-field">
+      <label>Proof Link <span class="opt">(GitHub PR / Figma / Google Doc)</span></label>
+      <input type="url" id="proof-url"
+             placeholder="https://github.com/your-repo/pull/42">
+    </div>
+
+    <!-- Preview -->
+    <div id="file-preview" style="display:none" class="file-preview"></div>
+
+    <!-- Submit -->
+    <button class="proof-submit-btn" id="proof-submit-btn"
+            onclick="submitCompletion()">
+      📨 Submit for Admin Review
+    </button>
+
+    <div class="proof-status" id="proof-status"></div>
+
+    <!-- AI Live Analysis Area in Modal -->
+    <div id="modal-ai-analysis" class="modal-ai-analysis" style="display:none;">
+      <div class="modal-ai-analysis-header">
+        <span style="font-size:18px">🤖</span>
+        <div class="modal-ai-analysis-title">AI ERROR ANALYSIS & CORRECTIONS</div>
+      </div>
+      <div id="modal-ai-feedback" style="font-size:12px; line-height:1.6; color:rgba(240,240,232,0.9);"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='tracker.js') }}"></script>
+</body>
+</html>
