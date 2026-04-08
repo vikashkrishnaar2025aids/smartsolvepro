@@ -144,6 +144,7 @@
             margin-bottom: 8px;
         }
         
+
         .nav-item:hover {
             background: var(--c-brand);
             border-color: var(--c-black);
@@ -169,7 +170,8 @@
             flex: 1;
             margin-left: var(--sidebar-width);
             width: calc(100% - var(--sidebar-width));
-            background: #ffffff;
+            background: transparent;
+            position: relative;
         }
         
         @media(max-width: 900px) {
@@ -254,7 +256,7 @@
                 </div>
             </header>
 
-            <div class="main-container">
+            <div class="main-container" style="padding: 24px;">
                 {% block content %}{% endblock %}
             </div>
         </main>
