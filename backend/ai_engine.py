@@ -321,8 +321,127 @@ class AIEngine:
             print("[AIEngine] Falling back to rule-based plan generation")
             return self._rule_based_plan(problem, team, deadline)
 
+<<<<<<< HEAD
+    def analyze_problem(self, problem: str, project_history: Dict[str, Any], team: List[Dict] = None, deadline: str = None) -> Dict[str, Any]:
+        # Detect similar project from history
+        problem_lower = problem.lower()
+        words = set(re.findall(r'\w+', problem_lower))
+        stop_words = {"a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "with", "build", "create", "make", "app", "project", "system", "i", "need", "want", "software", "my"}
+        words -= stop_words
+
+        best_match: Optional[Dict[str, Any]] = None
+        best_score = 0
+
+        for pid, proj in project_history.items():
+            if not isinstance(proj, dict): continue
+            hist_problem = str(proj.get("problem", "")).lower()
+            hist_words = set(re.findall(r'\w+', hist_problem))
+            score = len(words & hist_words)
+            if score > best_score and score >= 2:
+                best_score = score
+                best_match = proj
+
+        ideas: List[str] = []
+        real_world_solutions: List[str] = []
+        if self.mode != "rule-based":
+            # Use AI for deeper analysis if available
+            if isinstance(best_match, dict):
+                similar_info = f"A similar past project was found in workspace records: '{best_match.get('title')}' with problem: '{best_match.get('problem')}'."
+            else:
+                similar_info = "No similar past projects were found in local history."
+                
+            team_str = json.dumps(team) if team else "unspecified team"
+            deadline_str = deadline if deadline else "no fixed deadline"
+
+            prompt = f"""You are an expert project consultant. Analyze the following project problem statement. Provide 2-3 positive aspects or ideas about this concept, and 2-3 potential drawbacks and technical risks. Crucially, research and identify 1-2 actual projects, open-source repositories, or products that someone else has already created which exactly solve this or a very similar problem. Provide a highly detailed description of these existing solutions and exactly how they address the problem.
+            
+            PROBLEM: {problem}
+            TEAM_SKILLS: {team_str}
+            DEADLINE: {deadline_str}
+            CONTEXT: {similar_info}
+            
+            Respond ONLY with a JSON object:
+            {{
+              "positive_ideas": ["Detailed positive idea 1...", "Detailed positive idea 2..."],
+              "drawbacks_and_risks": ["Detailed risk 1...", "Detailed drawback 2..."],
+              "real_world_solutions": ["Someone already built 'Project X'. Here is a detailed explanation of what it does and how it solves this: [comprehensive description]"],
+              "strategic_focus": "one sentence summarizing the main challenge"
+            }}
+            """
+            try:
+                if self.mode == "groq-ai":
+                    client = Groq(api_key=self.groq_key)
+                    resp = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+                    raw = resp.choices[0].message.content.strip()
+                    raw = raw.replace("```json", "").replace("```", "").strip()
+                    ai_res = json.loads(raw)
+                elif self.mode == "openrouter-ai":
+                    headers = {
+                        "Authorization": f"Bearer {self.openrouter_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "http://localhost:5000",
+                        "X-Title": "Smart Solve AI",
+                    }
+                    body = {
+                        "model": "meta-llama/llama-3.3-70b-instruct:free",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": {"type": "json_object"}
+                    }
+                    resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=body)
+                    data = resp.json()
+                    raw = data["choices"][0]["message"]["content"].strip()
+                    raw = raw.replace("```json", "").replace("```", "").strip()
+                    ai_res = json.loads(raw)
+                elif self.mode == "gemini-ai":
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
+                    payload = {
+                        "contents": [{"parts": [{"text": prompt + "\nRespond with raw JSON only."}]}],
+                        "generationConfig": {"responseMimeType": "application/json"}
+                    }
+                    resp = requests.post(url, json=payload)
+                    data = resp.json()
+                    raw = data['candidates'][0]['content']['parts'][0]['text']
+                    ai_res = json.loads(raw)
+                else: 
+                    ai_res = {}
+                
+                positive_ideas = ai_res.get("positive_ideas", [])
+                drawbacks_and_risks = ai_res.get("drawbacks_and_risks", [])
+                real_world_solutions = ai_res.get("real_world_solutions", [])
+                if ai_res.get("strategic_focus"):
+                    positive_ideas.insert(0, f"Strategic Focus: {ai_res['strategic_focus']}")
+            except:
+                positive_ideas = self._get_rule_based_ideas(words)
+                drawbacks_and_risks = self._get_rule_based_risks(words)
+                real_world_solutions = self._get_rule_based_solutions(words)
+        else:
+            positive_ideas = self._get_rule_based_ideas(words)
+            drawbacks_and_risks = self._get_rule_based_risks(words)
+            real_world_solutions = self._get_rule_based_solutions(words)
+
+        result: Dict[str, Any] = {
+            "positive_ideas": positive_ideas,
+            "drawbacks_and_risks": drawbacks_and_risks,
+            "real_world_solutions": real_world_solutions,
+            "similar_project": None
+        }
+
+        if best_match:
+            result["similar_project"] = {
+                "title": best_match.get("title"),
+                "problem": best_match.get("problem"),
+                "date": best_match.get("created_at")
+            }
+            if not any("similar past project" in i.lower() for i in ideas):
+                ideas.insert(0, f"Found a similar past project: '{best_match.get('title')}'. Consider reviewing it for reuse.")
+
+=======
         # Convert validated Pydantic output back to the dict shape the rest of the app expects
         result["tasks"] = [dict(t) for t in result.get("tasks", [])]
+>>>>>>> 3b46636c058cf8be8469793eaa423c305bc9fe7a
         return result
 
     def calculate_progress(self, task_name, task_description,
@@ -338,6 +457,61 @@ class AIEngine:
 A team member has logged their daily work.
 Calculate the realistic progress percentage for this task.
 
+<<<<<<< HEAD
+    def _get_rule_based_ideas(self, words: set) -> List[str]:
+        ideas = [
+            "Establish a robust CI/CD pipeline early to automate testing and deployments, minimizing human error.",
+            "Define explicit success metrics and Key Performance Indicators (KPIs) with stakeholders before kickoff to ensure alignment.",
+            "Adopt an Agile sprint methodology to break down core features into highly testable, 1-2 week milestones.",
+            "Conduct a comprehensive technical risk assessment to identify potential vendor lock-ins or third-party API limits."
+        ]
+        if any(w in words for w in ["ai", "ml", "model", "data"]):
+            ideas.append("Design a highly scalable data ingestion pipeline and prioritize data sanitization, as model accuracy relies heavily on quality data.")
+            ideas.append("Implement ML Ops practices to monitor model drift over time and automate retraining workflows.")
+        if any(w in words for w in ["mobile", "ios", "android", "app"]):
+            ideas.append("Build with offline-first architecture using local databases (like SQLite or WatermelonDB) to ensure seamless user experience during poor network connectivity.")
+            ideas.append("Decide between cross-platform (React Native/Flutter) vs native development based on required hardware access and animation heavy features.")
+        if any(w in words for w in ["web", "site", "dashboard", "portal"]):
+            ideas.append("Focus heavily on Core Web Vitals to ensure exceptional load performance and rendering smoothness, particularly on mobile browsers.")
+            ideas.append("Implement strict stateless authentication mechanisms using secure HTTP-only cookies and robust JWT validation.")
+        if any(w in words for w in ["security", "auth", "login"]):
+            ideas.append("Enforce role-based access control (RBAC) at both the API layer and the UI layer to prevent privilege escalation vulnerabilities.")
+        return ideas
+
+    def _get_rule_based_risks(self, words: set) -> List[str]:
+        risks = [
+            "Scope creep is a major risk: without strict boundaries, feature additions will completely destroy the projected timeline.",
+            "Underestimating testing time: leaving QA to the end often results in compounding bugs and delayed releases."
+        ]
+        if any(w in words for w in ["ai", "ml", "model", "data"]):
+            risks.append("Data scarcity or poor quality data will directly bottleneck model training, resulting in unusable AI responses.")
+            risks.append("AI inference can be highly expensive at scale and cause severe latency issues for the end user.")
+        if any(w in words for w in ["mobile", "ios", "android", "app"]):
+            risks.append("App store review processes can introduce unpredictable delays that block your launch, especially concerning payments.")
+        if any(w in words for w in ["web", "site", "dashboard", "portal"]):
+            risks.append("Complex dynamic UIs can experience severe client-side memory leaks over time if state is not managed efficiently.")
+        return risks
+
+    def _get_rule_based_solutions(self, words: set) -> List[str]:
+        sols = []
+        if any(w in words for w in ["ai", "ml", "model", "data"]):
+            sols.append("Someone already built an open ecosystem called 'Hugging Face Spaces'. Thousands of creators have uploaded full AI pipeline templates ranging from vision parsing to text synthesis that address exactly these data limitations.")
+            sols.append("Google's 'Vertex AI' offers pre-trained auto-ML engines that already handle the classification tasks you described, eliminating the need to train your own models from absolute scratch.")
+        if any(w in words for w in ["mobile", "ios", "android", "app"]):
+            sols.append("Another team already created the 'Expo Router' framework for React Native. It offers an out-of-the-box solution for this exact offline-capable mobile architecture you are envisioning.")
+            sols.append("There is an existing powerful solution called 'Supabase' running their mobile starter kits, which gives you the instant authentication and real-time database syncing you need right out of the box.")
+        if any(w in words for w in ["web", "site", "dashboard", "portal"]):
+            sols.append("Someone already built 'Vercel v0' and thousands of 'Next.js Admin Boilerplates' on GitHub. These immediately solve the UI routing, data fetching, and layout structure requirements you're outlining without starting from zero.")
+            sols.append("An existing SaaS tool named 'Refine.dev' acts as a headless framework that specializes heavily in internal tools and dashboards, doing almost exactly the tabular data managing you need.")
+        if any(w in words for w in ["ecommerce", "shop", "store", "buy"]):
+            sols.append("Someone already created 'Medusa.js', an open-source headless commerce platform. It solves this exact problem natively by letting you completely customize the frontend while handling complex shopping cart logic securely in the background.")
+        
+        if not sols:
+            sols.append("Someone already published the 'T3 Stack (create-t3-app)'. It is an enormously popular existing boilerplate built exactly for this type of problem—it wires up your database, API, and frontend in minutes.")
+            sols.append("Another closely matched existing solution is 'PocketBase', an open-source tool that wraps all your backend complex logic, database, and admin UI into a single powerful file you can run instantly.")
+        return sols
+
+=======
 TASK DETAILS:
 - Task Name: {task_name}
 - Task Type: {task_type}
@@ -348,6 +522,7 @@ TODAY'S WORK LOG:
 - Hours Worked: {hours_worked}
 - What Was Done: {work_done}
 - Blockers: {blockers or 'None'}
+>>>>>>> 3b46636c058cf8be8469793eaa423c305bc9fe7a
 
 RULES:
 - Be realistic — don't over-estimate

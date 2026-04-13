@@ -326,6 +326,9 @@ async function generatePlan() {
 async function analyzeProblem() {
   const problem = document.getElementById('problem').value.trim();
   if (!problem) { showError('Enter a problem statement first.'); return; }
+  
+  const team = getTeam();
+  const deadline = document.getElementById('deadline')?.value.trim() || '';
 
   const btn       = document.getElementById('btn-analyze');
   const container = document.getElementById('analyze-results');
@@ -336,18 +339,39 @@ async function analyzeProblem() {
     const res  = await fetch('/api/analyze-problem', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ problem }),
+      body:    JSON.stringify({ problem, team, deadline }),
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error);
 
     const analysis = data.analysis;
-    let html = `<strong>💡 AI Ideas & Insights</strong>
-      <ul style="margin-top:8px;padding-left:20px">`;
-    (analysis.ideas || []).forEach(idea => {
-      html += `<li style="margin-bottom:4px;color:#aac4ff">${idea}</li>`;
+    let html = `<strong>💡 Highlights & Positive Ideas</strong>
+      <ul style="margin-top:8px;padding-left:20px;color:#aac4ff">`;
+    (analysis.positive_ideas || []).forEach(idea => {
+      html += `<li style="margin-bottom:4px;">${idea}</li>`;
     });
     html += `</ul>`;
+
+    if (analysis.drawbacks_and_risks && analysis.drawbacks_and_risks.length > 0) {
+      html += `<div style="margin-top:10px;">
+        <strong>⚠️ Drawbacks & Technical Risks</strong>
+        <ul style="margin-top:8px;padding-left:20px;color:#ff8c42">`;
+      analysis.drawbacks_and_risks.forEach(risk => {
+        html += `<li style="margin-bottom:4px;">${risk}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+    
+    if (analysis.real_world_solutions && analysis.real_world_solutions.length > 0) {
+      html += `<div style="margin-top:10px;padding:8px;background:rgba(0,255,157,0.1);border-left:3px solid #00ff9d">
+        <strong>🌍 Someone Already Created This (Existing Solutions)</strong>
+        <ul style="margin-top:8px;padding-left:20px;margin-bottom:0;">`;
+      analysis.real_world_solutions.forEach(sol => {
+        html += `<li style="margin-bottom:4px;color:#00ff9d">${sol}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
     if (analysis.similar_project) {
       const sp = analysis.similar_project;
       html += `<div style="margin-top:10px;padding:8px;
