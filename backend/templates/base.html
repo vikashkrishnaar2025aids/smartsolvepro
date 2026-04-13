@@ -198,8 +198,14 @@
         </div>
         <div class="logo-text">SMART SOLVE PRO</div>
         <div class="user-auth-area">
+            {% if session.get('user_name') %}
+            <div id="user-info" class="badge" style="display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid #000; padding: 5px 10px; font-weight: 700;">
+                <span style="font-size: 13px;">{{ session.get('user_name') }}</span>
+                <a href="/logout" class="btn-logout" style="text-decoration: none;">LOGOUT</a>
+            </div>
+            {% else %}
             <div id="google-auth-btn"></div>
-            <div id="user-info" class="badge" style="display: none; background: #fff; border: 2px solid #000; padding: 5px 10px; font-weight: 700;"></div>
+            {% endif %}
         </div>
     </div>
 
@@ -317,7 +323,7 @@
             if (window.google) {
                 google.accounts.id.disableAutoSelect();
             }
-            window.location.href = window.location.pathname; // Redirect to refresh state
+            window.location.href = "/logout"; // Redirect to backend logout
         }
 
         window.onload = function () {

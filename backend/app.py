@@ -1,5 +1,4 @@
-# app.py
-from flask import Flask, render_template, request, jsonify, send_from_directory  # type: ignore
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for  # type: ignore
 from flask_cors import CORS  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 import os
@@ -13,7 +12,7 @@ from werkzeug.utils import secure_filename # type: ignore
 from database import init_db, db  # type: ignore
 from models import (Project, Task, TeamMember,
                     WorkLog, Comment,
-                    RiskLog, MemberScore, StandupReport)  # type: ignore
+                    RiskLog, MemberScore, StandupReport, User)  # type: ignore
 from ai_engine import AIEngine  # type: ignore
 
 # ── Load env ───────────────────────────────────────────────────────
@@ -44,6 +43,71 @@ def allowed_file(filename):
 # Admin secret — change this in your .env file
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "admin-smartsolve-2024")
 
+
+# ══════════════════════════════════════════════════════════════════
+#  AUTH MIDDLEWARE
+# ══════════════════════════════════════════════════════════════════
+
+@app.before_request
+def require_login():
+    # List of endpoints that don't require authentication
+    allowed_endpoints = ['login', 'signup', 'static', 'google_auth', 'api_health']
+    
+    # Allow access if endpoint is in allowed list or if user is logged in
+    if request.endpoint not in allowed_endpoints and 'user_id' not in session:
+        # Check if it's an API request
+        if request.path.startswith('/api/'):
+            return jsonify({"error": "Unauthorized"}), 401
+        return redirect(url_for('login'))
+
+# ══════════════════════════════════════════════════════════════════
+#  AUTH ROUTES
+# ══════════════════════════════════════════════════════════════════
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        data = request.form
+        email = data.get("email")
+        password = data.get("password")
+        
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['user_name'] = user.name
+            session['user_email'] = user.email
+            return redirect(url_for('dashboard'))
+        
+        return render_template("login.html", error="Invalid email or password")
+        
+    return render_template("login.html")
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        name = request.form.get("name")
+        
+        if User.query.filter_by(email=email).first():
+            return render_template("login.html", signup=True, error="Email already exists")
+            
+        new_user = User(email=email, name=name)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        session['user_id'] = new_user.id
+        session['user_name'] = new_user.name
+        session['user_email'] = new_user.email
+        return redirect(url_for('dashboard'))
+        
+    return render_template("login.html", signup=True)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 # ══════════════════════════════════════════════════════════════════
 #  PAGE ROUTES
@@ -176,7 +240,7 @@ def generate_plan():
             ))
 
         db.session.commit()
-        print(f"[DB] Project {project_id} saved for user={user_email or 'guest'} ✅")
+        print(f"[DB] Project {project_id} saved for user={user_email or 'guest'} [OK]")
 
         # Return project_id at top level AND inside plan
         plan["project_id"] = project_id
@@ -336,7 +400,7 @@ def health():
         "status":   "ok",
         "version":  "2.0",
         "ai_mode":  engine.mode,
-        "database": "SQLite ✅",
+        "database": "SQLite [OK]",
     })
 
 
@@ -349,6 +413,11 @@ def google_auth():
         url   = f"https://oauth2.googleapis.com/tokeninfo?id_token={token}"
         with urllib.request.urlopen(url) as resp:
             id_info = json.loads(resp.read().decode())
+        # Set session
+        session['user_id'] = id_info.get("sub")
+        session['user_name'] = id_info.get("name")
+        session['user_email'] = id_info.get("email")
+        
         return jsonify({"success": True, "user": {
             "name":    id_info.get("name"),
             "email":   id_info.get("email"),
@@ -485,11 +554,11 @@ def submit_completion():
         # so Admin can see it. But let's show the errors/corrections.
 
         db.session.commit()
-        print(f"[Tracker] Task {task_db_id} submitted for review by {member_name} ✅")
+        print(f"[Tracker] Task {task_db_id} submitted for review by {member_name} [OK]")
 
         return jsonify({
             "success":         True,
-            "message":         "Submitted for admin review ✅",
+            "message":         "Submitted for admin review [OK]",
             "approval_status": task.approval_status,
             "task_status":     task.status,
         })
@@ -530,7 +599,7 @@ def approve_task():
         db.session.commit()
         return jsonify({
             "success":          True,
-            "message":          f"Task approved ✅",
+            "message":          f"Task approved [OK]",
             "project_progress": project.calculate_progress(),
         })
     except Exception as e:
@@ -1216,7 +1285,7 @@ def generate_standup(project_id):
         db.session.add(report)
         db.session.commit()
 
-        print(f"[Standup] Report generated for {project_id} ✅")
+        print(f"[Standup] Report generated for {project_id} [OK]")
         return jsonify({"success": True, "report": report.to_dict()})
 
     except Exception as e:

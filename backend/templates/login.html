@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Smart Solve AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;900&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='animations.css') }}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background: #fbfbfb;
+            font-family: var(--font-body);
+        }
+
+        .login-card {
+            max-width: 450px;
+            width: 100%;
+            background: #ffffff;
+            border: var(--b-width) solid var(--c-black);
+            padding: 40px;
+            box-shadow: var(--s-hard-lg);
+            position: relative;
+            z-index: 10;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        .login-title {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--c-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #ffffff;
+            border: var(--b-width) solid var(--c-black);
+            padding: 14px;
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            background: var(--c-brand);
+            transform: translate(-3px, -3px);
+            box-shadow: var(--s-hard-sm);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 16px;
+            background: var(--c-brand);
+            border: var(--b-width) solid var(--c-black);
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: var(--s-hard);
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-auth:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: var(--s-hard-lg);
+            background: var(--c-blue);
+        }
+
+        .btn-auth:active {
+            transform: translate(0, 0);
+            box-shadow: none;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .auth-link {
+            color: var(--c-accent);
+            text-decoration: none;
+            font-weight: 800;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .auth-link:hover {
+            border-bottom-color: var(--c-accent);
+        }
+
+        .error-msg {
+            background: #ffdee5;
+            border: 2px solid var(--c-black);
+            padding: 12px;
+            color: var(--c-black);
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .social-login {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #ccc;
+            text-align: center;
+        }
+
+        .social-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--c-muted);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* Ambient background orbs */
+        .orb { position: absolute; border: 2px solid var(--c-black); box-shadow: var(--s-hard); z-index: 1; }
+        .orb-1 { width: 120px; height: 120px; background: var(--c-brand); top: 5%; left: 5%; transform: rotate(15deg); }
+        .orb-2 { width: 100px; height: 100px; background: var(--c-purple); bottom: 5%; right: 5%; transform: rotate(-10deg); }
+        .orb-3 { width: 80px; height: 80px; background: var(--c-yellow); top: 15%; right: 10%; transform: rotate(-25deg); }
+        .orb-4 { width: 60px; height: 60px; background: var(--c-accent); bottom: 15%; left: 10%; transform: rotate(45deg); }
+        
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image: radial-gradient(#000000 1.5px, transparent 1.5px);
+            background-size: 30px 30px;
+            opacity: 0.08;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <span class="login-logo">◈</span>
+            <h1 class="login-title">SMART SOLVE PRO</h1>
+            <p class="login-subtitle">System Access Control // v2.0</p>
+        </div>
+
+        {% if error %}
+        <div class="error-msg">
+            <span>⚠️</span> {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="{{ url_for('signup' if signup else 'login') }}" method="POST">
+            {% if signup %}
+            <div class="form-group">
+                <label class="form-label" for="name">Full Name</label>
+                <input class="form-input" type="text" id="name" name="name" placeholder="John Doe" required>
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input class="form-input" type="email" id="email" name="email" placeholder="project-lead@firm.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Security Password</label>
+                <input class="form-input" type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-auth">
+                {{ 'Initialize Account' if signup else 'Authenticate' }} 
+            </button>
+        </form>
+
+        <div class="auth-switch">
+            {% if signup %}
+            Already have access? <a href="{{ url_for('login') }}" class="auth-link">Login here</a>
+            {% else %}
+            New to the system? <a href="{{ url_for('signup') }}" class="auth-link">Request Access</a>
+            {% endif %}
+        </div>
+
+        <div class="social-login">
+            <span class="social-label">OR CONNECT VIA SECURE CHANNEL</span>
+            <div id="google-auth-btn" style="display: flex; justify-content: center;"></div>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        const GOOGLE_CLIENT_ID = "{{ google_client_id or '' }}";
+
+        function handleCredentialResponse(response) {
+            fetch("/api/auth/google", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: response.credential })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = "/";
+                }
+            })
+            .catch(e => console.error("Login Error:", e));
+        }
+
+        window.onload = function () {
+            if (GOOGLE_CLIENT_ID) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("google-auth-btn"),
+                    { theme: "outline", size: "large", type: "standard", shape: "rectangular" }
+                );
+            }
+        }
+    </script>
+</body>
+</html>
