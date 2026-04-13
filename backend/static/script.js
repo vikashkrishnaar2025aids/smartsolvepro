@@ -375,7 +375,17 @@ function renderOutput(plan) {
 
   document.getElementById('proj-title').textContent    = plan.projectTitle || 'Project Plan';
   document.getElementById('proj-summary').textContent  = plan.summary      || '';
+  
+  const probEl = document.getElementById('problem');
+  if (probEl && plan.problem) {
+    probEl.value = plan.problem;
+    const cc = document.getElementById('char-count');
+    if (cc) cc.textContent = `${probEl.value.length} / 1000`;
+  }
+
   document.getElementById('proj-id-badge').textContent = currentProjId ? `ID: ${currentProjId}` : '';
+  const statusBadge = document.getElementById('proj-status-badge');
+  if (statusBadge) statusBadge.style.display = 'inline-block';
   document.getElementById('proj-time').textContent     = new Date().toLocaleString();
 
   const totalDays = plan.totalDays ||

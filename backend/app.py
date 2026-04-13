@@ -51,7 +51,7 @@ ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "admin-smartsolve-2024")
 @app.before_request
 def require_login():
     # List of endpoints that don't require authentication
-    allowed_endpoints = ['login', 'signup', 'static', 'google_auth', 'api_health']
+    allowed_endpoints = ['login', 'signup', 'static', 'google_auth', 'health']
     
     # Allow access if endpoint is in allowed list or if user is logged in
     if request.endpoint not in allowed_endpoints and 'user_id' not in session:
