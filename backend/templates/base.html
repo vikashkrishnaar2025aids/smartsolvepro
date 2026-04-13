@@ -12,7 +12,7 @@
         /* Sidebar layout styles */
         :root {
             --sidebar-width: 250px;
-            --top-header-height: 80px;
+            --top-header-height: 64px;
         }
         
         body {
@@ -25,15 +25,16 @@
             top: 0;
             left: 0;
             right: 0;
-            height: var(--top-header-height);
-            background: var(--c-brand);
+            height: 64px;
+            background: var(--c-brand); /* Neo-Brutalist Green */
             border-bottom: var(--b-width) solid var(--c-black);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 40px;
+            padding: 0 24px;
             z-index: 200;
             overflow: hidden;
+            box-shadow: 0 4px 0 0 rgba(0,0,0,0.05); /* Subtle depth */
         }
 
         .user-auth-area {
@@ -68,18 +69,18 @@
         }
 
         .top-app-header .logo-text {
-            font-size: clamp(28px, 6vw, 48px);
-            font-weight: 800;
-            letter-spacing: 12px;
+            font-size: clamp(20px, 4vw, 32px); /* Responsive sizing */
+            font-weight: 900;
+            letter-spacing: 4px; /* More readable spacing */
             color: var(--c-black);
             text-transform: uppercase;
             font-family: 'Syne', sans-serif;
             position: relative;
-            /* Unique Stylization: Layered Look */
             text-shadow: 
-                3px 3px 0px var(--c-bg), 
-                6px 6px 0px var(--c-black);
-            transition: all 0.3s ease;
+                2px 2px 0px var(--c-bg), 
+                4px 4px 0px var(--c-black);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin: 0 auto; /* Keep centered */
         }
 
         .top-app-header:hover .logo-text {
@@ -143,6 +144,7 @@
             margin-bottom: 8px;
         }
         
+
         .nav-item:hover {
             background: var(--c-brand);
             border-color: var(--c-black);
@@ -168,7 +170,8 @@
             flex: 1;
             margin-left: var(--sidebar-width);
             width: calc(100% - var(--sidebar-width));
-            background: #ffffff;
+            background: transparent;
+            position: relative;
         }
         
         @media(max-width: 900px) {
@@ -190,7 +193,9 @@
 <body>
     <!-- Persistent Top Header -->
     <div class="top-app-header">
-        <div style="width: 200px;"></div> <!-- Spacer to center the logo -->
+        <div class="sidebar-toggle" style="width: 200px; font-family: var(--font-mono); font-size: 10px; font-weight: 900; letter-spacing: 1px;">
+            <span style="opacity: 0.6;">SYSTEM://</span>ONLINE
+        </div>
         <div class="logo-text">SMART SOLVE PRO</div>
         <div class="user-auth-area">
             <div id="google-auth-btn"></div>
@@ -254,7 +259,7 @@
                 </div>
             </header>
 
-            <div class="main-container">
+            <div class="main-container" style="padding: 24px;">
                 {% block content %}{% endblock %}
             </div>
         </main>
