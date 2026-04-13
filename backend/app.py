@@ -258,6 +258,8 @@ def analyze_problem():
     try:
         data    = request.get_json()
         problem = data.get("problem", "").strip()
+        team    = data.get("team", [])
+        deadline= data.get("deadline", "").strip()
         if not problem:
             return jsonify({"error": "Problem statement is required"}), 400
 
@@ -270,7 +272,7 @@ def analyze_problem():
             }
             for p in projects
         }
-        analysis = engine.analyze_problem(problem, history_dict)
+        analysis = engine.analyze_problem(problem, history_dict, team, deadline)
         return jsonify({"success": True, "analysis": analysis})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -149,7 +149,7 @@ class AIEngine:
 
 
 
-    def analyze_problem(self, problem: str, project_history: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_problem(self, problem: str, project_history: Dict[str, Any], team: List[Dict] = None, deadline: str = None) -> Dict[str, Any]:
         # Detect similar project from history
         problem_lower = problem.lower()
         words = set(re.findall(r'\w+', problem_lower))
@@ -169,21 +169,29 @@ class AIEngine:
                 best_match = proj
 
         ideas: List[str] = []
+        real_world_solutions: List[str] = []
         if self.mode != "rule-based":
             # Use AI for deeper analysis if available
             if isinstance(best_match, dict):
-                similar_info = f"A similar past project was found: '{best_match.get('title')}' with problem: '{best_match.get('problem')}'."
+                similar_info = f"A similar past project was found in workspace records: '{best_match.get('title')}' with problem: '{best_match.get('problem')}'."
             else:
                 similar_info = "No similar past projects were found in local history."
                 
-            prompt = f"""You are an expert project consultant. Analyze the following project problem statement and provide 3-5 high-level strategic ideas or insights to help the user plan it better.
+            team_str = json.dumps(team) if team else "unspecified team"
+            deadline_str = deadline if deadline else "no fixed deadline"
+
+            prompt = f"""You are an expert project consultant. Analyze the following project problem statement. Provide 2-3 positive aspects or ideas about this concept, and 2-3 potential drawbacks and technical risks. Crucially, research and identify 1-2 actual projects, open-source repositories, or products that someone else has already created which exactly solve this or a very similar problem. Provide a highly detailed description of these existing solutions and exactly how they address the problem.
             
             PROBLEM: {problem}
+            TEAM_SKILLS: {team_str}
+            DEADLINE: {deadline_str}
             CONTEXT: {similar_info}
             
             Respond ONLY with a JSON object:
             {{
-              "ideas": ["idea 1", "idea 2", ...],
+              "positive_ideas": ["Detailed positive idea 1...", "Detailed positive idea 2..."],
+              "drawbacks_and_risks": ["Detailed risk 1...", "Detailed drawback 2..."],
+              "real_world_solutions": ["Someone already built 'Project X'. Here is a detailed explanation of what it does and how it solves this: [comprehensive description]"],
               "strategic_focus": "one sentence summarizing the main challenge"
             }}
             """
@@ -227,16 +235,24 @@ class AIEngine:
                 else: 
                     ai_res = {}
                 
-                ideas = ai_res.get("ideas", [])
+                positive_ideas = ai_res.get("positive_ideas", [])
+                drawbacks_and_risks = ai_res.get("drawbacks_and_risks", [])
+                real_world_solutions = ai_res.get("real_world_solutions", [])
                 if ai_res.get("strategic_focus"):
-                    ideas.append(f"Strategic Focus: {ai_res['strategic_focus']}")
+                    positive_ideas.insert(0, f"Strategic Focus: {ai_res['strategic_focus']}")
             except:
-                ideas = self._get_rule_based_ideas(words)
+                positive_ideas = self._get_rule_based_ideas(words)
+                drawbacks_and_risks = self._get_rule_based_risks(words)
+                real_world_solutions = self._get_rule_based_solutions(words)
         else:
-            ideas = self._get_rule_based_ideas(words)
+            positive_ideas = self._get_rule_based_ideas(words)
+            drawbacks_and_risks = self._get_rule_based_risks(words)
+            real_world_solutions = self._get_rule_based_solutions(words)
 
         result: Dict[str, Any] = {
-            "ideas": ideas,
+            "positive_ideas": positive_ideas,
+            "drawbacks_and_risks": drawbacks_and_risks,
+            "real_world_solutions": real_world_solutions,
             "similar_project": None
         }
 
@@ -254,19 +270,56 @@ class AIEngine:
 
     def _get_rule_based_ideas(self, words: set) -> List[str]:
         ideas = [
-            "Define clear success metrics and KPIs before kickoff.",
-            "Break the core functionality into small, testable milestones.",
-            "Identify potential technical risks and dependencies early.",
+            "Establish a robust CI/CD pipeline early to automate testing and deployments, minimizing human error.",
+            "Define explicit success metrics and Key Performance Indicators (KPIs) with stakeholders before kickoff to ensure alignment.",
+            "Adopt an Agile sprint methodology to break down core features into highly testable, 1-2 week milestones.",
+            "Conduct a comprehensive technical risk assessment to identify potential vendor lock-ins or third-party API limits."
         ]
         if any(w in words for w in ["ai", "ml", "model", "data"]):
-            ideas.append("Prioritize data quality and collection strategy.")
+            ideas.append("Design a highly scalable data ingestion pipeline and prioritize data sanitization, as model accuracy relies heavily on quality data.")
+            ideas.append("Implement ML Ops practices to monitor model drift over time and automate retraining workflows.")
         if any(w in words for w in ["mobile", "ios", "android", "app"]):
-            ideas.append("Plan for cross-platform compatibility and offline support.")
-        if any(w in words for w in ["web", "site", "dashboard"]):
-            ideas.append("Focus on responsive design and load performance.")
+            ideas.append("Build with offline-first architecture using local databases (like SQLite or WatermelonDB) to ensure seamless user experience during poor network connectivity.")
+            ideas.append("Decide between cross-platform (React Native/Flutter) vs native development based on required hardware access and animation heavy features.")
+        if any(w in words for w in ["web", "site", "dashboard", "portal"]):
+            ideas.append("Focus heavily on Core Web Vitals to ensure exceptional load performance and rendering smoothness, particularly on mobile browsers.")
+            ideas.append("Implement strict stateless authentication mechanisms using secure HTTP-only cookies and robust JWT validation.")
         if any(w in words for w in ["security", "auth", "login"]):
-            ideas.append("Implement industry-standard OAuth2 or JWT for security.")
+            ideas.append("Enforce role-based access control (RBAC) at both the API layer and the UI layer to prevent privilege escalation vulnerabilities.")
         return ideas
+
+    def _get_rule_based_risks(self, words: set) -> List[str]:
+        risks = [
+            "Scope creep is a major risk: without strict boundaries, feature additions will completely destroy the projected timeline.",
+            "Underestimating testing time: leaving QA to the end often results in compounding bugs and delayed releases."
+        ]
+        if any(w in words for w in ["ai", "ml", "model", "data"]):
+            risks.append("Data scarcity or poor quality data will directly bottleneck model training, resulting in unusable AI responses.")
+            risks.append("AI inference can be highly expensive at scale and cause severe latency issues for the end user.")
+        if any(w in words for w in ["mobile", "ios", "android", "app"]):
+            risks.append("App store review processes can introduce unpredictable delays that block your launch, especially concerning payments.")
+        if any(w in words for w in ["web", "site", "dashboard", "portal"]):
+            risks.append("Complex dynamic UIs can experience severe client-side memory leaks over time if state is not managed efficiently.")
+        return risks
+
+    def _get_rule_based_solutions(self, words: set) -> List[str]:
+        sols = []
+        if any(w in words for w in ["ai", "ml", "model", "data"]):
+            sols.append("Someone already built an open ecosystem called 'Hugging Face Spaces'. Thousands of creators have uploaded full AI pipeline templates ranging from vision parsing to text synthesis that address exactly these data limitations.")
+            sols.append("Google's 'Vertex AI' offers pre-trained auto-ML engines that already handle the classification tasks you described, eliminating the need to train your own models from absolute scratch.")
+        if any(w in words for w in ["mobile", "ios", "android", "app"]):
+            sols.append("Another team already created the 'Expo Router' framework for React Native. It offers an out-of-the-box solution for this exact offline-capable mobile architecture you are envisioning.")
+            sols.append("There is an existing powerful solution called 'Supabase' running their mobile starter kits, which gives you the instant authentication and real-time database syncing you need right out of the box.")
+        if any(w in words for w in ["web", "site", "dashboard", "portal"]):
+            sols.append("Someone already built 'Vercel v0' and thousands of 'Next.js Admin Boilerplates' on GitHub. These immediately solve the UI routing, data fetching, and layout structure requirements you're outlining without starting from zero.")
+            sols.append("An existing SaaS tool named 'Refine.dev' acts as a headless framework that specializes heavily in internal tools and dashboards, doing almost exactly the tabular data managing you need.")
+        if any(w in words for w in ["ecommerce", "shop", "store", "buy"]):
+            sols.append("Someone already created 'Medusa.js', an open-source headless commerce platform. It solves this exact problem natively by letting you completely customize the frontend while handling complex shopping cart logic securely in the background.")
+        
+        if not sols:
+            sols.append("Someone already published the 'T3 Stack (create-t3-app)'. It is an enormously popular existing boilerplate built exactly for this type of problem—it wires up your database, API, and frontend in minutes.")
+            sols.append("Another closely matched existing solution is 'PocketBase', an open-source tool that wraps all your backend complex logic, database, and admin UI into a single powerful file you can run instantly.")
+        return sols
 
 
 
