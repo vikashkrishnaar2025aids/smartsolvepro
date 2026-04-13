@@ -66,20 +66,6 @@ def admin_api_required(f):
 def _check_admin(req):
     return 'admin_id' in session
 
-@app.before_request
-def require_global_login():
-    # Allow access to the login page and static files (CSS/JS)
-    if request.endpoint in ('admin_login', 'static'):
-        return
-        
-    if 'admin_id' not in session:
-        # If it's an API request, return JSON error instead of redirect
-        if request.path.startswith('/api/'):
-            return jsonify({"error": "Admin authentication required"}), 403
-        # Otherwise redirect to login page
-        return redirect(url_for('admin_login'))
-
-
 # ══════════════════════════════════════════════════════════════════
 #  AUTH MIDDLEWARE
 # ══════════════════════════════════════════════════════════════════

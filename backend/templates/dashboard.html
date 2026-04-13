@@ -30,11 +30,17 @@
     </section>
 
     <!-- Always visible action button if no projects are showing? Or keep it inside? User said "remove team, task, allocation" so we keep it clean. -->
-    <section style="margin-top: 20px;">
+    <section style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <a href="/planner" class="btn-generate" style="text-decoration: none; display: flex; justify-content: center; align-items: center; padding: 12px;">
             <span class="btn-content">
                 <span class="btn-icon-wrap">◈</span>
                 <span class="btn-text">INITIALIZE NEW PROJECT</span>
+            </span>
+        </a>
+        <a href="/admin/dashboard" class="btn-generate" style="text-decoration: none; display: flex; justify-content: center; align-items: center; padding: 12px; background: var(--c-purple);">
+            <span class="btn-content">
+                <span class="btn-icon-wrap">⚙</span>
+                <span class="btn-text">ADMIN CONTROL PORTAL</span>
             </span>
         </a>
     </section>
