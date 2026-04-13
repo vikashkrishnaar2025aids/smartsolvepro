@@ -1,3 +1,4 @@
+# app.py
 from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for  # type: ignore
 from flask_cors import CORS  # type: ignore
 from flask_migrate import Migrate  # type: ignore
@@ -8,11 +9,13 @@ from datetime import datetime, date
 from dotenv import load_dotenv, set_key  # type: ignore
 import urllib.request
 from werkzeug.utils import secure_filename # type: ignore
+from functools import wraps
 
 from database import init_db, db  # type: ignore
 from models import (Project, Task, TeamMember,
                     WorkLog, Comment,
-                    RiskLog, MemberScore, StandupReport, User)  # type: ignore
+                    RiskLog, MemberScore, StandupReport, User,
+                    AdminUser, AICallLog)  # type: ignore
 from ai_engine import AIEngine  # type: ignore
 
 # ── Load env ───────────────────────────────────────────────────────
@@ -40,8 +43,41 @@ def allowed_file(filename):
     return "." in filename and \
            filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Admin secret — change this in your .env file
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "admin-smartsolve-2024")
+# ══════════════════════════════════════════════════════════════════
+#  AUTHENTICATION DECORATORS
+# ══════════════════════════════════════════════════════════════════
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_api_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            return jsonify({"error": "Admin authentication required"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def _check_admin(req):
+    return 'admin_id' in session
+
+@app.before_request
+def require_global_login():
+    # Allow access to the login page and static files (CSS/JS)
+    if request.endpoint in ('admin_login', 'static'):
+        return
+        
+    if 'admin_id' not in session:
+        # If it's an API request, return JSON error instead of redirect
+        if request.path.startswith('/api/'):
+            return jsonify({"error": "Admin authentication required"}), 403
+        # Otherwise redirect to login page
+        return redirect(url_for('admin_login'))
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -155,20 +191,37 @@ def tracker(project_id):
     return render_template("tracker.html", project=project, 
                            members=[m.to_dict() for m in project.members])
 
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        email    = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        
+        user = AdminUser.query.filter_by(email=email).first()
+        if user and user.check_password(password):
+            session['admin_id'] = user.id
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template("admin_login.html", error="Invalid credentials")
+            
+    if 'admin_id' in session:
+        return redirect(url_for('admin_dashboard'))
+    return render_template("admin_login.html")
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop('admin_id', None)
+    return redirect(url_for('admin_login'))
+
 @app.route("/admin/dashboard")
+@admin_required
 def admin_dashboard():
     """
     Admin dashboard — shows ALL projects from ALL users.
-    URL: http://localhost:5000/admin/dashboard?secret=admin-smartsolve-2024
     """
-    secret = request.args.get("secret", "")
-    if secret != ADMIN_SECRET:
-        return """<html><body style='background:#0a0a0a;color:#ff4d6d;
-            font-family:monospace;display:flex;align-items:center;
-            justify-content:center;height:100vh;font-size:20px;margin:0'>
-            ⛔ Access Denied — Add ?secret=YOUR_ADMIN_SECRET to the URL
-            </body></html>""", 403
-    return render_template("admin_dashboard.html")
+    return render_template("admin_dashboard.html", active_page="admin")
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -935,8 +988,6 @@ def add_comment():
 
 # ── Admin Routes ───────────────────────────────────────────────────
 
-def _check_admin(req):
-    return req.args.get("secret","") == ADMIN_SECRET
 
 @app.route("/api/admin/stats", methods=["GET"])
 def admin_stats():
@@ -1321,12 +1372,43 @@ def war_room(project_id):
     return render_template("war_room.html", project=project)
 
 # ══════════════════════════════════════════════════════════════════
+#  ADMIN LOGS API
+# ══════════════════════════════════════════════════════════════════
+@app.route("/api/admin/ai_logs", methods=["GET"])
+@admin_api_required
+def get_ai_logs():
+    try:
+        logs = AICallLog.query.order_by(AICallLog.created_at.desc()).limit(100).all()
+        return jsonify({"logs": [log.to_dict() for log in logs]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def _seed_admin_if_empty():
+    """Create a default admin user if none exists."""
+    if not AdminUser.query.first():
+        default_email    = os.environ.get("ADMIN_EMAIL", "admin@smartsolve.ai")
+        default_password = os.environ.get("ADMIN_PASSWORD", "changeme123")
+        
+        user = AdminUser(email=default_email)
+        user.set_password(default_password)
+        db.session.add(user)
+        try:
+            db.session.commit()
+            print(f"[Init] Seeded default admin: {default_email}")
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Init] Could not seed admin: {e}")
+
+# ══════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    with app.app_context():
+        _seed_admin_if_empty()
+
     print("\n" + "=" * 55)
     print("  * SMART SOLVE AI - Server Starting")
     print("  * App:     http://localhost:5000")
     print("  * Tracker: http://localhost:5000/tracker/<ID>")
-    print(f"  * Admin:   http://localhost:5000/admin/dashboard?secret={ADMIN_SECRET}")
+    print("  * Admin:   http://localhost:5000/admin/dashboard")
     print("  * DB:      SQLite")
     print("  * AI Mode:", engine.mode)
     print("=" * 55 + "\n")
