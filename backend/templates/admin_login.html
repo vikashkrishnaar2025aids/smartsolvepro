@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Smart Solve AI</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;900&family=Syne:wght@800&display=swap" rel="stylesheet">
+  
+  <!-- Global Styles (Neo-Brutalism Theme) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='animations.css') }}">
+
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--c-bg); /* Controlled by style.css */
+      position: relative;
+      overflow: hidden;
+      margin: 0;
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      z-index: 10;
+      position: relative;
+      padding: 0 20px;
+    }
+
+    .login-card {
+      background: #ffddeb; /* Light pink from style.css tasks-card */
+      border: var(--b-width) solid var(--c-black);
+      padding: 40px;
+      box-shadow: var(--s-hard-lg);
+      transform: rotate(-1deg);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    }
+    
+    .login-card:hover {
+      transform: rotate(0deg) translate(-5px, -5px);
+      box-shadow: 15px 15px 0px 0px var(--c-black);
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 30px;
+      transform: rotate(1deg);
+    }
+    
+    .logo-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+      display: inline-block;
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      color: var(--c-black);
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0px #fff;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .brutalist-input {
+      width: 100%;
+      background: #ffffff;
+      border: var(--b-width) solid var(--c-black);
+      padding: 16px;
+      color: var(--c-black);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      outline: none;
+      box-shadow: var(--s-hard-sm);
+      transition: all 0.2s;
+    }
+    
+    .brutalist-input:focus {
+      background: var(--c-brand); /* Neon green */
+      transform: translate(-3px, -3px);
+      box-shadow: var(--s-hard);
+    }
+    
+    .brutalist-input::placeholder {
+      color: var(--c-hint);
+      font-weight: 600;
+    }
+
+    .brutalist-label {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--c-black);
+      margin-bottom: 8px;
+    }
+
+    .brutalist-button {
+      width: 100%;
+      background: var(--c-blue);
+      color: var(--c-black);
+      border: var(--b-width) solid var(--c-black);
+      padding: 18px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: var(--s-hard);
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+    
+    .brutalist-button:hover {
+      background: var(--c-purple);
+      transform: translate(-4px, -4px);
+      box-shadow: var(--s-hard-lg);
+    }
+    
+    .brutalist-button:active {
+      transform: translate(0, 0);
+      box-shadow: none;
+    }
+
+    .error-box-brutal {
+      background: #ff4d6d;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 14px;
+      border: 3px solid var(--c-black);
+      box-shadow: var(--s-hard-sm);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: 1px;
+    }
+
+    .link-wrapper {
+      text-align: center;
+      margin-top: 28px;
+    }
+    
+    .back-link {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--c-black);
+      text-decoration: none;
+      padding: 4px 8px;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .back-link:hover {
+      background: var(--c-black);
+      color: #fff;
+      border-color: var(--c-black);
+      transform: translateY(-2px);
+      box-shadow: 2px 2px 0px var(--c-muted);
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient background elements from style.css -->
+  <div class="bg-canvas" aria-hidden="true">
+      <div class="bg-grid"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="scan-line"></div>
+  </div>
+
+  <div class="login-container">
+    <div class="login-card anim-fade-up">
+      <div class="logo-container">
+        <div class="logo-icon">◈</div>
+        <div class="logo-text">Admin Login</div>
+      </div>
+
+      {% if error %}
+      <div class="error-box-brutal anim-shake">
+        <span style="font-size: 18px;">⚠</span>
+        {{ error | replace('+', ' ') }}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/admin/login" onsubmit="handleSubmit(this)">
+        <div class="form-group">
+          <label class="brutalist-label">Email Address</label>
+          <input
+            type="email"
+            name="email"
+            class="brutalist-input"
+            placeholder="admin@smartsolve.ai"
+            required
+            autofocus
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="brutalist-label">Secret Password</label>
+          <input
+            type="password"
+            name="password"
+            class="brutalist-input"
+            placeholder="••••••••"
+            required
+          >
+        </div>
+
+        <button type="submit" class="brutalist-button" id="loginBtn">
+          Authorize Access
+        </button>
+      </form>
+
+      <div class="link-wrapper">
+        <a href="/" class="back-link">← Return to Application</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function handleSubmit(form) {
+      const btn = document.getElementById('loginBtn');
+      btn.textContent = 'AUTHORIZING...';
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.8';
+    }
+  </script>
+</body>
+</html>

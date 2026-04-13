@@ -84,6 +84,9 @@
                             <span>⚡ ${p.task_count} tasks</span>
                             <span>📅 ${p.created_at}</span>
                         </div>
+                        <div class="history-problem-snippet" style="font-size: 11px; color: #666; margin-top: 8px; font-style: italic; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            ${p.problem || ''}
+                        </div>
                     </div>`).join('');
             }
         }
@@ -92,18 +95,18 @@
     document.addEventListener('DOMContentLoaded', async () => {
         try {
             const uid = getUserId();
-            if (!uid) {
-                document.getElementById('dash-active-count').textContent = '0';
-                updateView();
-                return;
-            }
-
-            const r = await fetch(`/api/history?user_id=${uid}`);
+            const url = uid ? `/api/history?user_id=${uid}` : '/api/history';
+            
+            const r = await fetch(url);
             const d = await r.json();
             globalHistory = d.history || [];
             
             document.getElementById('dash-active-count').textContent = d.total_projects || globalHistory.length;
             
+            if (!uid) {
+                document.getElementById('dash-active-label').textContent = 'Guest Initiatives';
+            }
+
             // Default: Hidden
             updateView();
 
